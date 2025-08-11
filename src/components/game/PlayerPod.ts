@@ -1,0 +1,165 @@
+import * as Phaser from 'phaser';
+
+export class PlayerPod extends Phaser.GameObjects.Sprite {
+  private velocity = { x: 0, y: 0 };
+  private thrusterForce = 0.3;
+  private maxVelocity = 200;
+  private thrusterFlames: Phaser.GameObjects.Sprite[] = [];
+  private currentThrust = { x: 0, y: 0 };
+  private mass = 1;
+  private isThrusting_flag = false;
+
+  constructor(scene: Phaser.Scene, x: number, y: number) {
+    super(scene, x, y, 'player-pod');
+    
+    scene.add.existing(this);
+    this.setOrigin(0.5);
+    this.setDepth(10);
+    
+    // Create thruster flame sprites
+    this.createThrusterFlames();
+  }
+
+  private createThrusterFlames() {
+    // Create 4 thruster flames for each direction
+    const flamePositions = [
+      { x: 0, y: 25, rotation: 0 },      // Bottom
+      { x: 0, y: -25, rotation: Math.PI }, // Top
+      { x: -25, y: 0, rotation: -Math.PI/2 }, // Left
+      { x: 25, y: 0, rotation: Math.PI/2 }     // Right
+    ];
+    
+    flamePositions.forEach((pos, index) => {
+      const flame = this.scene.add.sprite(this.x + pos.x, this.y + pos.y, 'thruster-flame');
+      flame.setRotation(pos.rotation);
+      flame.setVisible(false);
+      flame.setDepth(5);
+      this.thrusterFlames.push(flame);
+    });
+  }
+
+  update(delta: number, controls: any) {
+    this.isThrusting_flag = false;
+    this.currentThrust = { x: 0, y: 0 };
+    
+    // Apply thrust based on input (Newton's 3rd Law - action/reaction)
+    if (controls.up) {
+      this.currentThrust.y = -this.thrusterForce;
+      this.isThrusting_flag = true;
+      this.showThrusterFlame(0); // Bottom thruster
+    }
+    if (controls.down) {
+      this.currentThrust.y = this.thrusterForce;
+      this.isThrusting_flag = true;
+      this.showThrusterFlame(1); // Top thruster
+    }
+    if (controls.left) {
+      this.currentThrust.x = -this.thrusterForce;
+      this.isThrusting_flag = true;
+      this.showThrusterFlame(3); // Right thruster
+    }
+    if (controls.right) {
+      this.currentThrust.x = this.thrusterForce;
+      this.isThrusting_flag = true;
+      this.showThrusterFlame(2); // Left thruster
+    }
+    
+    // Newton's 2nd Law: F = ma, so a = F/m
+    const acceleration = {
+      x: this.currentThrust.x / this.mass,
+      y: this.currentThrust.y / this.mass
+    };
+    
+    // Apply acceleration to velocity
+    this.velocity.x += acceleration.x * delta * 0.1;
+    this.velocity.y += acceleration.y * delta * 0.1;
+    
+    // Limit velocity
+    const speed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
+    if (speed > this.maxVelocity) {
+      this.velocity.x = (this.velocity.x / speed) * this.maxVelocity;
+      this.velocity.y = (this.velocity.y / speed) * this.maxVelocity;
+    }
+    
+    // Newton's 1st Law: Object in motion stays in motion (no friction in space)
+    this.x += this.velocity.x * delta * 0.01;
+    this.y += this.velocity.y * delta * 0.01;
+    
+    // Keep player on screen (wrap around)
+    this.wrapAroundScreen();
+    
+    // Update thruster flame positions
+    this.updateThrusterFlames();
+    
+    // Hide all thruster flames if not thrusting
+    if (!this.isThrusting_flag) {
+      this.thrusterFlames.forEach(flame => flame.setVisible(false));
+    }
+    
+    // Consume fuel when thrusting
+    if (this.isThrusting_flag && this.scene.scene.key === 'GameScene') {
+      (this.scene as any).consumeFuel(0.5 * delta * 0.01);
+    }
+  }
+
+  private showThrusterFlame(index: number) {
+    if (this.thrusterFlames[index]) {
+      this.thrusterFlames[index].setVisible(true);
+      this.thrusterFlames[index].setAlpha(Phaser.Math.FloatBetween(0.7, 1.0));
+      this.thrusterFlames[index].setScale(Phaser.Math.FloatBetween(0.8, 1.2));
+    }
+  }
+
+  private updateThrusterFlames() {
+    const flameOffsets = [
+      { x: 0, y: 25 },   // Bottom
+      { x: 0, y: -25 },  // Top
+      { x: -25, y: 0 },  // Left
+      { x: 25, y: 0 }    // Right
+    ];
+    
+    this.thrusterFlames.forEach((flame, index) => {
+      flame.x = this.x + flameOffsets[index].x;
+      flame.y = this.y + flameOffsets[index].y;
+    });
+  }
+
+  private wrapAroundScreen() {
+    const gameWidth = this.scene.sys.game.config.width as number;
+    const gameHeight = this.scene.sys.game.config.height as number;
+    
+    if (this.x < 0) this.x = gameWidth;
+    if (this.x > gameWidth) this.x = 0;
+    if (this.y < 0) this.y = gameHeight;
+    if (this.y > gameHeight) this.y = 0;
+  }
+
+  public getVelocity() {
+    return { x: this.velocity.x, y: this.velocity.y };
+  }
+
+  public getPosition() {
+    return { x: this.x, y: this.y };
+  }
+
+  public isThrusting() {
+    return this.isThrusting_flag;
+  }
+
+  public getThrustVector() {
+    return this.currentThrust;
+  }
+
+  public increaseMass(amount: number) {
+    this.mass += amount;
+  }
+
+  public decreaseMass(amount: number) {
+    this.mass = Math.max(0.5, this.mass - amount);
+  }
+
+  destroy() {
+    this.thrusterFlames.forEach(flame => flame.destroy());
+    super.destroy();
+  }
+}

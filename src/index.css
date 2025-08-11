@@ -2,95 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Newton's Space Rescue - Design System */
+/* Space theme with educational UI elements */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Space Theme Colors - Deep space background with bright accents */
+    --background: 225 40% 8%;  /* Deep space blue */
+    --foreground: 200 100% 95%;  /* Bright white for text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 225 40% 12%;  /* Slightly lighter space blue */
+    --card-foreground: 200 100% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 225 40% 12%;
+    --popover-foreground: 200 100% 95%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 195 100% 60%;  /* Bright cyan for UI elements */
+    --primary-foreground: 225 40% 8%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 250 50% 25%;  /* Purple accent */
+    --secondary-foreground: 200 100% 95%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 225 30% 15%;
+    --muted-foreground: 200 30% 70%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 195 100% 60%;  /* Cyan accent */
+    --accent-foreground: 225 40% 8%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 80% 60%;  /* Warning red */
+    --destructive-foreground: 200 100% 95%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 225 30% 20%;
+    --input: 225 30% 15%;
+    --ring: 195 100% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Game-specific colors */
+    --game-background: 225 45% 5%;  /* Even deeper space */
+    --hud-background: 225 40% 12% / 0.9;  /* Semi-transparent HUD */
+    --thruster-glow: 45 100% 70%;  /* Orange thruster glow */
+    --velocity-arrow: 195 100% 70%;  /* Cyan velocity indicator */
+    --thrust-arrow: 45 100% 70%;  /* Orange thrust indicator */
+    --rescue-target: 120 60% 60%;  /* Green for astronauts */
+    --danger-zone: 0 80% 60%;  /* Red for hazards */
+    
+    /* Educational overlay colors */
+    --law1-color: 195 100% 60%;  /* Cyan for 1st law */
+    --law2-color: 280 60% 70%;   /* Purple for 2nd law */
+    --law3-color: 45 100% 70%;   /* Orange for 3rd law */
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Gradients */
+    --gradient-space: linear-gradient(135deg, hsl(225 45% 5%), hsl(250 40% 10%));
+    --gradient-hud: linear-gradient(90deg, hsl(225 40% 12% / 0.8), hsl(225 40% 15% / 0.9));
+    --gradient-button: linear-gradient(135deg, hsl(195 100% 60%), hsl(195 100% 50%));
+    --gradient-thruster: radial-gradient(circle, hsl(45 100% 70% / 0.8), hsl(45 100% 50% / 0.4), transparent);
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Animations & Effects */
+    --glow-thruster: 0 0 20px hsl(45 100% 70% / 0.6);
+    --glow-ui: 0 0 10px hsl(195 100% 60% / 0.4);
+    --shadow-panel: 0 8px 32px hsl(225 45% 5% / 0.8);
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    /* Typography */
+    --font-game: 'Orbitron', 'Roboto Mono', monospace;
 
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar (not used in game) */
+    --sidebar-background: 225 40% 12%;
+    --sidebar-foreground: 200 100% 95%;
+    --sidebar-primary: 195 100% 60%;
+    --sidebar-primary-foreground: 225 40% 8%;
+    --sidebar-accent: 250 50% 25%;
+    --sidebar-accent-foreground: 200 100% 95%;
+    --sidebar-border: 225 30% 20%;
+    --sidebar-ring: 195 100% 60%;
   }
 }
 
@@ -100,6 +84,134 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-hidden;
+    font-family: var(--font-game);
+  }
+
+  /* Import Orbitron font for futuristic space UI */
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&display=swap');
+}
+
+@layer components {
+  /* Game Canvas Styles */
+  .game-container {
+    @apply relative w-full h-screen bg-gradient-to-br from-[hsl(var(--game-background))] to-[hsl(250_40%_10%)] overflow-hidden;
+  }
+
+  .game-canvas {
+    @apply w-full h-full block;
+  }
+
+  /* HUD Components */
+  .hud-panel {
+    @apply bg-gradient-to-r from-[hsl(var(--hud-background))] to-[hsl(225_40%_15%_/_0.8)] 
+           border border-[hsl(var(--border))] rounded-lg backdrop-blur-sm
+           shadow-[var(--shadow-panel)] p-4;
+  }
+
+  .hud-text {
+    @apply text-sm font-semibold text-foreground tracking-wide;
+  }
+
+  .hud-value {
+    @apply text-lg font-bold text-primary;
+  }
+
+  /* Control Buttons */
+  .control-button {
+    @apply bg-gradient-to-b from-[hsl(var(--primary))] to-[hsl(195_100%_50%)]
+           text-primary-foreground font-bold rounded-lg border-2 border-[hsl(var(--primary))]
+           shadow-lg active:scale-95 transition-all duration-100
+           hover:shadow-[var(--glow-ui)] select-none touch-none;
+  }
+
+  .control-button:active {
+    @apply bg-gradient-to-b from-[hsl(195_100%_50%)] to-[hsl(195_100%_40%)];
+  }
+
+  /* Educational Overlays */
+  .physics-overlay {
+    @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
+           bg-gradient-to-br from-[hsl(var(--card))] to-[hsl(225_40%_15%)]
+           border-2 border-[hsl(var(--primary))] rounded-xl p-6
+           shadow-2xl backdrop-blur-md max-w-md text-center;
+  }
+
+  .physics-title {
+    @apply text-xl font-bold text-primary mb-2;
+  }
+
+  .physics-description {
+    @apply text-foreground leading-relaxed;
+  }
+
+  /* Particle Effects */
+  .thruster-glow {
+    @apply absolute w-4 h-4 rounded-full 
+           bg-gradient-radial from-[hsl(var(--thruster-glow))] via-[hsl(45_100%_60%_/_0.6)] to-transparent
+           shadow-[var(--glow-thruster)] animate-pulse;
+  }
+
+  /* Vector Arrows */
+  .vector-arrow {
+    @apply absolute pointer-events-none;
+  }
+
+  .velocity-arrow {
+    @apply stroke-[hsl(var(--velocity-arrow))] stroke-2 fill-[hsl(var(--velocity-arrow))];
+  }
+
+  .thrust-arrow {
+    @apply stroke-[hsl(var(--thrust-arrow))] stroke-2 fill-[hsl(var(--thrust-arrow))];
+  }
+
+  /* Game UI States */
+  .game-paused {
+    @apply after:absolute after:inset-0 after:bg-black after:bg-opacity-50 
+           after:flex after:items-center after:justify-center
+           after:text-2xl after:font-bold after:text-primary;
+  }
+
+  .game-paused::after {
+    content: "PAUSED";
+  }
+}
+
+@layer utilities {
+  /* Custom animations for space theme */
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-thruster {
+    animation: thruster 0.1s ease-in-out infinite alternate;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(1deg); }
+  }
+
+  @keyframes thruster {
+    0% { opacity: 0.8; transform: scale(1); }
+    100% { opacity: 1; transform: scale(1.1); }
+  }
+
+  @keyframes glow {
+    0% { box-shadow: 0 0 10px hsl(var(--primary) / 0.4); }
+    100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.8); }
+  }
+
+  /* Responsive text sizes for mobile */
+  .text-responsive {
+    @apply text-xs md:text-sm lg:text-base;
+  }
+
+  .text-responsive-lg {
+    @apply text-sm md:text-base lg:text-lg;
   }
 }
