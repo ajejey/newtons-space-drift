@@ -189,7 +189,9 @@ export class GameScene extends Phaser.Scene {
     const playerPos = this.player.getPosition();
     const rescueRange = 60;
     
-    this.rescueTargets.forEach((target, index) => {
+    // Use traditional for loop to avoid array mutation issues
+    for (let i = this.rescueTargets.length - 1; i >= 0; i--) {
+      const target = this.rescueTargets[i];
       if (!target.isRescued()) {
         const distance = Phaser.Math.Distance.Between(
           playerPos.x, playerPos.y,
@@ -199,16 +201,17 @@ export class GameScene extends Phaser.Scene {
         if (distance < rescueRange) {
           target.rescue();
           this.score += 100;
-          this.rescueTargets.splice(index, 1);
+          this.rescueTargets.splice(i, 1);
           
           // Show educational message
           this.educationalOverlay.show(
             "Newton's 2nd Law",
             "Increased mass (towing astronaut) reduces acceleration for the same thrust force!"
           );
+          break; // Only rescue one at a time
         }
       }
-    });
+    }
   }
 
   private startGameTimer() {
@@ -237,6 +240,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private gameWin() {
+    if (!this.gameStarted) return; // Prevent double trigger
+    this.gameStarted = false;
     this.scene.pause();
     this.educationalOverlay.show(
       "Mission Complete!",
@@ -245,6 +250,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private gameOver() {
+    if (!this.gameStarted) return; // Prevent double trigger  
+    this.gameStarted = false;
     this.scene.pause();
     this.educationalOverlay.show(
       "Mission Failed",

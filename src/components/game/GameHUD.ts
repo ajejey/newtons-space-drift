@@ -44,17 +44,31 @@ export class GameHUD {
       color: '#FF6600'
     });
 
-    // Velocity indicator (top-right)
+    // Velocity indicator (top-right) - moved down to avoid header overlap
     const gameWidth = this.scene.sys.game.config.width as number;
-    this.hudElements.velocityLabel = this.scene.add.text(gameWidth - 150, 20, 'VELOCITY:', {
+    this.hudElements.velocityLabel = this.scene.add.text(gameWidth - 150, 60, 'VELOCITY:', {
       ...textStyle,
       fontSize: '14px'
     });
 
+    // Add velocity value text
+    this.hudElements.velocityValue = this.scene.add.text(gameWidth - 150, 85, '0.0 m/s', {
+      ...textStyle,
+      fontSize: '12px',
+      color: '#FFFFFF'
+    });
+
     // Thrust indicator
-    this.hudElements.thrustLabel = this.scene.add.text(gameWidth - 150, 80, 'THRUST:', {
+    this.hudElements.thrustLabel = this.scene.add.text(gameWidth - 150, 120, 'THRUST:', {
       ...textStyle,
       fontSize: '14px'
+    });
+
+    // Add thrust value text
+    this.hudElements.thrustValue = this.scene.add.text(gameWidth - 150, 145, 'OFF', {
+      ...textStyle,
+      fontSize: '12px',
+      color: '#FFFFFF'
     });
 
     // Create vector arrows
@@ -97,13 +111,21 @@ export class GameHUD {
       `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
     );
 
+    // Update velocity display
+    const speed = Math.sqrt(gameState.velocity.x * gameState.velocity.x + gameState.velocity.y * gameState.velocity.y);
+    this.hudElements.velocityValue.setText(`${speed.toFixed(1)} m/s`);
+
     // Update velocity vector arrow
     this.updateVelocityArrow(gameState.velocity);
 
-    // Update thrust arrow when thrusting
+    // Update thrust display and arrow when thrusting
     if (gameState.isThrusting) {
+      this.hudElements.thrustValue.setText('ON');
+      this.hudElements.thrustValue.setColor('#FF6600');
       this.updateThrustArrow();
     } else {
+      this.hudElements.thrustValue.setText('OFF');
+      this.hudElements.thrustValue.setColor('#666666');
       this.thrustArrow.clear();
     }
   }
@@ -113,7 +135,7 @@ export class GameHUD {
     
     const gameWidth = this.scene.sys.game.config.width as number;
     const arrowOriginX = gameWidth - 75;
-    const arrowOriginY = 50;
+    const arrowOriginY = 90; // Moved down to avoid header overlap
     
     // Scale velocity for display
     const scale = 0.5;
@@ -151,7 +173,7 @@ export class GameHUD {
     
     const gameWidth = this.scene.sys.game.config.width as number;
     const arrowOriginX = gameWidth - 75;
-    const arrowOriginY = 110;
+    const arrowOriginY = 170; // Moved down to avoid overlap with velocity arrow
     
     // Simple thrust indicator (pointing right for demo)
     this.thrustArrow.lineStyle(3, 0xFF6600);

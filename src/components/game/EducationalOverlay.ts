@@ -63,7 +63,7 @@ export class EducationalOverlay {
     this.descriptionText.setOrigin(0.5);
 
     // Close button
-    this.closeButton = this.scene.add.text(0, 60, 'CLICK TO CONTINUE', {
+    this.closeButton = this.scene.add.text(0, 60, 'PRESS SPACE TO CONTINUE', {
       fontSize: '14px',
       fontFamily: 'Orbitron, monospace',
       color: '#FF6600',
@@ -98,7 +98,19 @@ export class EducationalOverlay {
       ease: 'Back.easeOut'
     });
 
-    // Click anywhere to close
+    // Setup keyboard listener for spacebar
+    const spaceKey = this.scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    if (spaceKey) {
+      const onSpacePress = () => {
+        if (this.isVisible) {
+          this.hide();
+          spaceKey.off('down', onSpacePress);
+        }
+      };
+      spaceKey.on('down', onSpacePress);
+    }
+
+    // Click anywhere to close (keep as fallback)
     this.scene.input.once('pointerdown', () => {
       if (this.isVisible) {
         this.hide();
