@@ -20,25 +20,28 @@ export class GameHUD {
       strokeThickness: 2
     };
 
-    // Score
-    this.hudElements.scoreLabel = this.scene.add.text(20, 20, 'SCORE:', textStyle);
-    this.hudElements.scoreValue = this.scene.add.text(20, 45, '0', {
+    // Get game height for bottom positioning
+    const gameHeight = this.scene.sys.game.config.height as number;
+    
+    // Score (bottom-left)
+    this.hudElements.scoreLabel = this.scene.add.text(20, gameHeight - 120, 'SCORE:', textStyle);
+    this.hudElements.scoreValue = this.scene.add.text(20, gameHeight - 95, '0', {
       ...textStyle,
       fontSize: '20px',
       color: '#FFFFFF'
     });
 
-    // Fuel
-    this.hudElements.fuelLabel = this.scene.add.text(20, 80, 'FUEL:', textStyle);
-    this.hudElements.fuelValue = this.scene.add.text(20, 105, '100%', {
+    // Fuel (bottom-left, below score)
+    this.hudElements.fuelLabel = this.scene.add.text(20, gameHeight - 80, 'FUEL:', textStyle);
+    this.hudElements.fuelValue = this.scene.add.text(20, gameHeight - 55, '100%', {
       ...textStyle,
       fontSize: '18px',
       color: '#00FF88'
     });
 
-    // Time
-    this.hudElements.timeLabel = this.scene.add.text(20, 140, 'TIME:', textStyle);
-    this.hudElements.timeValue = this.scene.add.text(20, 165, '02:00', {
+    // Time (bottom-left, below fuel)
+    this.hudElements.timeLabel = this.scene.add.text(20, gameHeight - 40, 'TIME:', textStyle);
+    this.hudElements.timeValue = this.scene.add.text(20, gameHeight - 15, '02:00', {
       ...textStyle,
       fontSize: '18px',
       color: '#FF6600'

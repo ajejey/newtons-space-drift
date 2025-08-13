@@ -242,11 +242,19 @@ export class GameScene extends Phaser.Scene {
   private gameWin() {
     if (!this.gameStarted) return; // Prevent double trigger
     this.gameStarted = false;
-    this.scene.pause();
+    
+    console.log('Game won! Showing overlay...');
+    
+    // Show overlay first, then pause
     this.educationalOverlay.show(
       "Mission Complete!",
       `Great job! You've demonstrated all three of Newton's Laws of Motion. Score: ${this.score}`
     );
+    
+    // Pause after a short delay to ensure overlay is shown
+    this.time.delayedCall(100, () => {
+      this.scene.pause();
+    });
   }
 
   private gameOver() {
