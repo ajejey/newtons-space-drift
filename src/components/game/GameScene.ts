@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { PlayerPod } from './PlayerPod';
 import { RescueTarget } from './RescueTarget';
+import { Debris } from './Debris';
 import { PhysicsEngine } from './PhysicsEngine';
 import { GameHUD } from './GameHUD';
 import { EducationalOverlay } from './EducationalOverlay';
@@ -8,6 +9,8 @@ import { EducationalOverlay } from './EducationalOverlay';
 export class GameScene extends Phaser.Scene {
   private player!: PlayerPod;
   private rescueTargets: RescueTarget[] = [];
+  private debris: Debris[] = [];
+  private towedAstronauts: RescueTarget[] = [];
   private physicsEngine!: PhysicsEngine;
   private gameHUD!: GameHUD;
   private educationalOverlay!: EducationalOverlay;
@@ -18,6 +21,7 @@ export class GameScene extends Phaser.Scene {
   private timeRemaining = 120; // 2 minutes
   private level = 1;
   private gameStarted = false;
+  private totalAstronautsRescued = 0;
   
   // Input handling
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -88,6 +92,15 @@ export class GameScene extends Phaser.Scene {
     // Update rescue targets
     this.rescueTargets.forEach(target => target.update(delta));
     
+    // Update debris
+    this.debris.forEach(debris => debris.update(delta));
+    
+    // Update towed astronauts
+    this.towedAstronauts.forEach(astronaut => astronaut.update(delta));
+    
+    // Check collisions
+    this.checkCollisions();
+    
     // Update HUD
     this.gameHUD.update({
       score: this.score,
@@ -122,6 +135,14 @@ export class GameScene extends Phaser.Scene {
     graphics.fillTriangle(0, 0, 10, 5, 0, 10);
     graphics.generateTexture('thruster-flame', 10, 10);
     
+    // Debris (gray irregular shape)
+    graphics.clear();
+    graphics.fillStyle(0x666666);
+    graphics.fillRect(0, 0, 25, 25);
+    graphics.fillRect(5, -5, 15, 15);
+    graphics.fillRect(-3, 8, 20, 12);
+    graphics.generateTexture('debris', 30, 30);
+    
     graphics.destroy();
   }
 
@@ -136,17 +157,41 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createRescueTargets() {
-    // Create 3 astronauts for Level 1
-    const positions = [
-      { x: 200, y: 150 },
-      { x: 600, y: 200 },
-      { x: 500, y: 400 }
-    ];
+    let positions: { x: number; y: number }[] = [];
+    
+    if (this.level === 1) {
+      // Level 1: Close astronauts, no debris
+      positions = [
+        { x: 200, y: 150 },
+        { x: 600, y: 200 },
+        { x: 500, y: 400 }
+      ];
+    } else if (this.level === 2) {
+      // Level 2: Further astronauts, with debris
+      positions = [
+        { x: 150, y: 100 },
+        { x: 650, y: 150 },
+        { x: 200, y: 450 },
+        { x: 550, y: 400 },
+        { x: 350, y: 100 }
+      ];
+      this.createDebris();
+    }
     
     positions.forEach(pos => {
       const target = new RescueTarget(this, pos.x, pos.y, 'astronaut');
       this.rescueTargets.push(target);
     });
+  }
+
+  private createDebris() {
+    // Create moving debris for Level 2
+    for (let i = 0; i < 4; i++) {
+      const x = Phaser.Math.Between(100, 700);
+      const y = Phaser.Math.Between(100, 500);
+      const debrisObj = new Debris(this, x, y);
+      this.debris.push(debrisObj);
+    }
   }
 
   private setupInput() {
@@ -189,7 +234,7 @@ export class GameScene extends Phaser.Scene {
     const playerPos = this.player.getPosition();
     const rescueRange = 60;
     
-    // Use traditional for loop to avoid array mutation issues
+    // Check if we can rescue new astronauts
     for (let i = this.rescueTargets.length - 1; i >= 0; i--) {
       const target = this.rescueTargets[i];
       if (!target.isRescued()) {
@@ -203,14 +248,45 @@ export class GameScene extends Phaser.Scene {
           this.score += 100;
           this.rescueTargets.splice(i, 1);
           
-          // Show educational message
+          // Add to towed astronauts
+          this.towedAstronauts.push(target);
+          
+          // Increase player mass
+          this.player.increaseMass(0.5);
+          
+          // Show educational message about mass
           this.educationalOverlay.show(
             "Newton's 2nd Law",
-            "Increased mass (towing astronaut) reduces acceleration for the same thrust force!"
+            `Towing astronaut ${this.towedAstronauts.length}: Increased mass reduces acceleration (F = ma)!`
           );
           break; // Only rescue one at a time
         }
       }
+    }
+    
+    // Check if we can deliver astronauts to rescue station (simplified: screen center)
+    const stationRange = 80;
+    const stationPos = { x: 400, y: 300 };
+    const distanceToStation = Phaser.Math.Distance.Between(
+      playerPos.x, playerPos.y,
+      stationPos.x, stationPos.y
+    );
+    
+    if (distanceToStation < stationRange && this.towedAstronauts.length > 0) {
+      // Deliver all towed astronauts
+      const delivered = this.towedAstronauts.length;
+      this.totalAstronautsRescued += delivered;
+      this.score += delivered * 50; // Bonus for delivery
+      
+      // Reset towed astronauts and player mass
+      this.towedAstronauts.forEach(astronaut => astronaut.destroy());
+      this.towedAstronauts = [];
+      this.player.resetMass();
+      
+      this.educationalOverlay.show(
+        "Astronauts Delivered!",
+        `${delivered} astronauts safely delivered! Mass reduced, acceleration restored.`
+      );
     }
   }
 
@@ -228,15 +304,89 @@ export class GameScene extends Phaser.Scene {
   }
 
   private checkGameState() {
-    // Win condition: all astronauts rescued
-    if (this.rescueTargets.length === 0) {
-      this.gameWin();
+    // Win condition: all astronauts rescued and delivered
+    if (this.rescueTargets.length === 0 && this.towedAstronauts.length === 0) {
+      if (this.level === 1) {
+        this.advanceToLevel2();
+      } else {
+        this.gameWin();
+      }
     }
     
     // Lose condition: time up
     if (this.timeRemaining <= 0) {
       this.gameOver();
     }
+  }
+
+  private checkCollisions() {
+    const playerPos = this.player.getPosition();
+    const playerVel = this.player.getVelocity();
+    const collisionRange = 35;
+    
+    // Check player vs debris collisions
+    this.debris.forEach(debris => {
+      const distance = Phaser.Math.Distance.Between(
+        playerPos.x, playerPos.y,
+        debris.x, debris.y
+      );
+      
+      if (distance < collisionRange) {
+        // Handle collision - transfer momentum
+        const newVel = debris.handleCollision(playerVel, this.player.getMass());
+        this.player.setVelocity(newVel.x, newVel.y);
+        
+        // Show educational message
+        this.educationalOverlay.show(
+          "Newton's 3rd Law",
+          "Collision! Momentum transferred between objects - equal and opposite reaction!"
+        );
+        
+        // Consume fuel due to collision
+        this.consumeFuel(5);
+      }
+    });
+    
+    // Check towed astronauts vs debris collisions
+    this.towedAstronauts.forEach(astronaut => {
+      this.debris.forEach(debris => {
+        const distance = Phaser.Math.Distance.Between(
+          astronaut.x, astronaut.y,
+          debris.x, debris.y
+        );
+        
+        if (distance < 30) {
+          // Astronaut gets knocked away
+          const knockDirection = Phaser.Math.Angle.Between(debris.x, debris.y, astronaut.x, astronaut.y);
+          const knockForce = 20;
+          astronaut.x += Math.cos(knockDirection) * knockForce;
+          astronaut.y += Math.sin(knockDirection) * knockForce;
+        }
+      });
+    });
+  }
+
+  private advanceToLevel2() {
+    if (!this.gameStarted) return;
+    this.gameStarted = false;
+    
+    this.educationalOverlay.show(
+      "Level 1 Complete!",
+      "Great! Now try Level 2 with moving debris and multiple astronauts. Press SPACE to continue."
+    );
+    
+    // Advance to level 2 after delay
+    this.time.delayedCall(3000, () => {
+      this.level = 2;
+      this.timeRemaining = 180; // 3 minutes for level 2
+      this.fuel = 100; // Refuel
+      this.debris = []; // Clear any existing debris
+      this.rescueTargets = []; // Clear existing targets
+      this.towedAstronauts = [];
+      this.player.resetMass();
+      this.createRescueTargets(); // Create new targets with debris
+      this.gameStarted = true;
+    });
   }
 
   private gameWin() {

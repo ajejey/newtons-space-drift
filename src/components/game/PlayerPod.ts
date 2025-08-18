@@ -158,6 +158,19 @@ export class PlayerPod extends Phaser.GameObjects.Sprite {
     this.mass = Math.max(0.5, this.mass - amount);
   }
 
+  public resetMass() {
+    this.mass = 1.0; // Reset to base mass
+  }
+
+  public getMass(): number {
+    return this.mass;
+  }
+
+  public setVelocity(vx: number, vy: number) {
+    this.velocity.x = vx;
+    this.velocity.y = vy;
+  }
+
   destroy() {
     this.thrusterFlames.forEach(flame => flame.destroy());
     super.destroy();
