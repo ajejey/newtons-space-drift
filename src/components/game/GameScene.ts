@@ -160,11 +160,16 @@ export class GameScene extends Phaser.Scene {
     let positions: { x: number; y: number }[] = [];
     
     if (this.level === 1) {
-      // Level 1: Close astronauts, no debris
+      // Level 1: 8 astronauts, no debris
       positions = [
         { x: 200, y: 150 },
         { x: 600, y: 200 },
-        { x: 500, y: 400 }
+        { x: 500, y: 400 },
+        { x: 150, y: 300 },
+        { x: 650, y: 350 },
+        { x: 300, y: 100 },
+        { x: 550, y: 150 },
+        { x: 400, y: 500 }
       ];
     } else if (this.level === 2) {
       // Level 2: Further astronauts, with debris
@@ -306,6 +311,7 @@ export class GameScene extends Phaser.Scene {
   private checkGameState() {
     // Win condition: all astronauts rescued and delivered
     if (this.rescueTargets.length === 0 && this.towedAstronauts.length === 0) {
+      console.log(`Level ${this.level} complete! Rescued targets: ${this.rescueTargets.length}, Towed: ${this.towedAstronauts.length}`);
       if (this.level === 1) {
         this.advanceToLevel2();
       } else {
