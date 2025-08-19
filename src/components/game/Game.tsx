@@ -105,7 +105,7 @@ export const Game: React.FC = () => {
       />
 
       {/* Desktop Instructions */}
-      {!isMobile && gameLoaded && (
+      {/* {!isMobile && gameLoaded && (
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
           <div className="hud-panel text-center max-w-md">
             <h3 className="text-lg font-bold text-primary mb-2">Newton's Space Rescue</h3>
@@ -117,7 +117,7 @@ export const Game: React.FC = () => {
             </p>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Game Title */}
       <div className="absolute top-4 left-4 z-40">
@@ -127,6 +127,9 @@ export const Game: React.FC = () => {
         <p className="text-sm text-muted-foreground">
           Learn Physics Through Gameplay
         </p>
+        <p className="text-sm text-foreground mb-2">
+              Use <span className="text-primary font-semibold">Arrow Keys</span> or <span className="text-primary font-semibold">WASD</span> to fire thrusters
+            </p>
       </div>
 
       {/* Loading Overlay */}
