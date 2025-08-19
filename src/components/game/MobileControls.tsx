@@ -32,12 +32,12 @@ export const MobileControls: React.FC<MobileControlsProps> = ({
 
   return (
     <div className="absolute inset-0 pointer-events-none z-50">
-      {/* Directional Controls - Left Side */}
-      <div className="absolute left-4 bottom-4 pointer-events-auto">
-        <div className="relative w-32 h-32">
+      {/* Directional Controls - Left Side - Responsive */}
+      <div className="absolute left-2 bottom-2 md:left-4 md:bottom-4 pointer-events-auto">
+        <div className="relative w-28 h-28 md:w-32 md:h-32">
           {/* Up Button */}
           <Button
-            className="control-button absolute top-0 left-1/2 transform -translate-x-1/2 w-12 h-12 p-0"
+            className="control-button absolute top-0 left-1/2 transform -translate-x-1/2 w-10 h-10 md:w-12 md:h-12 p-0 text-lg md:text-xl"
             onTouchStart={handleTouchStart('up')}
             onTouchEnd={handleTouchEnd('up')}
             onMouseDown={handleTouchStart('up')}
@@ -49,7 +49,7 @@ export const MobileControls: React.FC<MobileControlsProps> = ({
           
           {/* Down Button */}
           <Button
-            className="control-button absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-12 p-0"
+            className="control-button absolute bottom-0 left-1/2 transform -translate-x-1/2 w-10 h-10 md:w-12 md:h-12 p-0 text-lg md:text-xl"
             onTouchStart={handleTouchStart('down')}
             onTouchEnd={handleTouchEnd('down')}
             onMouseDown={handleTouchStart('down')}
@@ -61,7 +61,7 @@ export const MobileControls: React.FC<MobileControlsProps> = ({
           
           {/* Left Button */}
           <Button
-            className="control-button absolute left-0 top-1/2 transform -translate-y-1/2 w-12 h-12 p-0"
+            className="control-button absolute left-0 top-1/2 transform -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 p-0 text-lg md:text-xl"
             onTouchStart={handleTouchStart('left')}
             onTouchEnd={handleTouchEnd('left')}
             onMouseDown={handleTouchStart('left')}
@@ -73,7 +73,7 @@ export const MobileControls: React.FC<MobileControlsProps> = ({
           
           {/* Right Button */}
           <Button
-            className="control-button absolute right-0 top-1/2 transform -translate-y-1/2 w-12 h-12 p-0"
+            className="control-button absolute right-0 top-1/2 transform -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 p-0 text-lg md:text-xl"
             onTouchStart={handleTouchStart('right')}
             onTouchEnd={handleTouchEnd('right')}
             onMouseDown={handleTouchStart('right')}
@@ -85,10 +85,10 @@ export const MobileControls: React.FC<MobileControlsProps> = ({
         </div>
       </div>
 
-      {/* Rescue Button - Right Side */}
-      <div className="absolute right-4 bottom-4 pointer-events-auto">
+      {/* Rescue Button - Right Side - Responsive */}
+      <div className="absolute right-2 bottom-2 md:right-4 md:bottom-4 pointer-events-auto">
         <Button
-          className="control-button w-16 h-16 text-sm font-bold"
+          className="control-button w-14 h-14 md:w-16 md:h-16 text-xs md:text-sm font-bold"
           onTouchStart={onRescue}
           onMouseDown={onRescue}
         >
@@ -96,8 +96,8 @@ export const MobileControls: React.FC<MobileControlsProps> = ({
         </Button>
       </div>
 
-      {/* Touch Areas for Physics Demonstration */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 pointer-events-auto">
+      {/* Mobile Instructions - Responsive */}
+      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 pointer-events-auto md:top-4">
         <div className="hud-panel text-center max-w-xs">
           <p className="text-xs text-muted-foreground">
             Use thrusters to move through space!

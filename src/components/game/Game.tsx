@@ -119,12 +119,12 @@ export const Game: React.FC = () => {
         </div>
       )}
 
-      {/* Game Title */}
-      <div className="absolute top-4 left-4 z-40">
-        <h1 className="text-2xl font-bold text-primary tracking-wide">
+      {/* Game Title - Responsive */}
+      <div className="absolute top-2 left-2 md:top-4 md:left-4 z-40">
+        <h1 className="text-lg md:text-2xl font-bold text-primary tracking-wide">
           NEWTON'S SPACE RESCUE
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs md:text-sm text-muted-foreground">
           Learn Physics Through Gameplay
         </p>
       </div>

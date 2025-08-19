@@ -207,26 +207,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleInput() {
-    // Reset mobile controls
-    Object.keys(this.mobileControls).forEach(key => {
-      if (key !== 'rescue') {
-        (this.mobileControls as any)[key] = false;
-      }
-    });
+    // Handle keyboard input (don't reset mobile controls)
+    const keyboardUp = this.cursors.up.isDown || this.wasdKeys.W.isDown;
+    const keyboardDown = this.cursors.down.isDown || this.wasdKeys.S.isDown;
+    const keyboardLeft = this.cursors.left.isDown || this.wasdKeys.A.isDown;
+    const keyboardRight = this.cursors.right.isDown || this.wasdKeys.D.isDown;
     
-    // Keyboard input
-    if (this.cursors.up.isDown || this.wasdKeys.W.isDown) {
-      this.mobileControls.up = true;
-    }
-    if (this.cursors.down.isDown || this.wasdKeys.S.isDown) {
-      this.mobileControls.down = true;
-    }
-    if (this.cursors.left.isDown || this.wasdKeys.A.isDown) {
-      this.mobileControls.left = true;
-    }
-    if (this.cursors.right.isDown || this.wasdKeys.D.isDown) {
-      this.mobileControls.right = true;
-    }
+    // Combine keyboard and mobile controls
+    this.mobileControls.up = keyboardUp || this.mobileControls.up;
+    this.mobileControls.down = keyboardDown || this.mobileControls.down;
+    this.mobileControls.left = keyboardLeft || this.mobileControls.left;
+    this.mobileControls.right = keyboardRight || this.mobileControls.right;
     
     // Rescue action
     if (Phaser.Input.Keyboard.JustDown(this.rescueKey) || this.mobileControls.rescue) {
