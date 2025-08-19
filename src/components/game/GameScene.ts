@@ -162,14 +162,14 @@ export class GameScene extends Phaser.Scene {
     if (this.level === 1) {
       // Level 1: 8 astronauts, no debris
       positions = [
-        { x: 200, y: 150 },
-        { x: 600, y: 200 },
-        { x: 500, y: 400 },
-        { x: 150, y: 300 },
-        { x: 650, y: 350 },
-        { x: 300, y: 100 },
-        { x: 550, y: 150 },
-        { x: 400, y: 500 }
+        { x: 121, y: 480 },
+        { x: 750, y: 150 },
+        { x: 530, y: 310 },
+        { x: 120, y: 150 },
+        { x: 615, y: 520 },
+        { x: 250, y: 225 },
+        { x: 555, y: 80 },
+        { x: 390, y: 410 }
       ];
     } else if (this.level === 2) {
       // Level 2: Further astronauts, with debris
@@ -257,7 +257,7 @@ export class GameScene extends Phaser.Scene {
           this.towedAstronauts.push(target);
           
           // Increase player mass
-          this.player.increaseMass(0.5);
+          this.player.increaseMass(3);
           
           // Show educational message about mass
           this.educationalOverlay.show(
