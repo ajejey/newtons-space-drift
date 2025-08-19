@@ -53,8 +53,8 @@ export class RescueTarget extends Phaser.GameObjects.Sprite {
     // Update glow position
     if (this.pulseGlow) {
       this.pulseGlow.clear();
-      this.pulseGlow.lineStyle(3, 0x00FF88, this.pulseGlow.alpha);
-      this.pulseGlow.strokeCircle(this.x, this.y, 25);
+      this.pulseGlow.lineStyle(3, 0x00CCFF, this.pulseGlow.alpha);
+      this.pulseGlow.strokeCircle(this.x, this.y, 20);
     }
   }
 

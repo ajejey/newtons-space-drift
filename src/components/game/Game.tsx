@@ -10,6 +10,7 @@ export const Game: React.FC = () => {
   const gameSceneRef = useRef<GameScene | null>(null);
   const isMobile = useIsMobile();
   const [gameLoaded, setGameLoaded] = useState(false);
+  const [instructionsOpen, setInstructionsOpen] = useState(true);
 
   useEffect(() => {
     if (!gameRef.current) return;
@@ -104,32 +105,36 @@ export const Game: React.FC = () => {
         visible={isMobile && gameLoaded}
       />
 
-      {/* Desktop Instructions */}
-      {/* {!isMobile && gameLoaded && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
-          <div className="hud-panel text-center max-w-md">
-            <h3 className="text-lg font-bold text-primary mb-2">Newton's Space Rescue</h3>
-            <p className="text-sm text-foreground mb-2">
-              Use <span className="text-primary font-semibold">Arrow Keys</span> or <span className="text-primary font-semibold">WASD</span> to fire thrusters
-            </p>
-            <p className="text-sm text-foreground">
-              Press <span className="text-primary font-semibold">SPACE</span> to rescue astronauts
-            </p>
-          </div>
-        </div>
-      )} */}
-
-      {/* Game Title */}
+      {/* Game Title and Instructions */}
       <div className="absolute top-4 left-4 z-40">
         <h1 className="text-2xl font-bold text-primary tracking-wide">
           NEWTON'S SPACE RESCUE
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mb-3">
           Learn Physics Through Gameplay
         </p>
-        <p className="text-sm text-foreground mb-2">
-              Use <span className="text-primary font-semibold">Arrow Keys</span> or <span className="text-primary font-semibold">WASD</span> to fire thrusters
-            </p>
+        
+        {/* Collapsible Game Instructions */}
+        <div className="bg-black bg-opacity-50 p-3 rounded-md border border-primary border-opacity-30 max-w-xs">
+          <button 
+            onClick={() => setInstructionsOpen(!instructionsOpen)}
+            className="flex items-center justify-between w-full text-md font-bold text-primary mb-2"
+          >
+            <span>MISSION INSTRUCTIONS:</span>
+            <span>{instructionsOpen ? '▲' : '▼'}</span>
+          </button>
+          
+          {instructionsOpen && (
+            <ol className="list-decimal list-inside text-sm space-y-2 text-foreground">
+              <li>Use <span className="text-primary font-semibold">Arrow Keys</span> or <span className="text-primary font-semibold">WASD</span> to fire thrusters</li>
+              <li>Approach green astronauts and press <span className="text-primary font-semibold">SPACE</span> to rescue them</li>
+              <li>Deliver rescued astronauts to the <span className="text-primary font-semibold">blue rescue station</span> at the center</li>
+              <li>Avoid collisions with debris - they consume extra fuel</li>
+              <li>Complete the mission before time runs out</li>
+              <li>When fuel reaches 0%, thrusters will stop working</li>
+            </ol>
+          )}
+        </div>
       </div>
 
       {/* Loading Overlay */}

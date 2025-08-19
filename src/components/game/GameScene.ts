@@ -14,6 +14,7 @@ export class GameScene extends Phaser.Scene {
   private physicsEngine!: PhysicsEngine;
   private gameHUD!: GameHUD;
   private educationalOverlay!: EducationalOverlay;
+  private rescueStation!: Phaser.GameObjects.Container;
   
   // Game state
   private score = 0;
@@ -42,10 +43,25 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    // Create simple colored rectangles for sprites (will be replaced with actual sprites later)
+    // Load game assets
     this.load.image('starfield', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
     
-    // Create simple colored shapes for game objects
+    // Load player ship
+    this.load.image('player-ship', 'assets/images/player-ship.svg');
+    
+    // Load astronaut
+    this.load.image('astronaut-sprite', 'assets/images/astronaut.svg');
+    
+    // Load space debris
+    this.load.image('debris-sprite', 'assets/images/space-debris.svg');
+    
+    // Load thruster flames
+    this.load.image('thruster-up', 'assets/images/thrusters/thruster-up.svg');
+    this.load.image('thruster-down', 'assets/images/thrusters/thruster-down.svg');
+    this.load.image('thruster-left', 'assets/images/thrusters/thruster-left.svg');
+    this.load.image('thruster-right', 'assets/images/thrusters/thruster-right.svg');
+    
+    // Create simple colored shapes for other game objects
     this.createSimpleSprites();
   }
 
@@ -55,6 +71,9 @@ export class GameScene extends Phaser.Scene {
     
     // Create starfield background
     this.createStarfield();
+    
+    // Create rescue station marker at center
+    this.createRescueStation();
     
     // Create player
     this.player = new PlayerPod(this, 400, 300);
@@ -118,16 +137,13 @@ export class GameScene extends Phaser.Scene {
     // Create colored rectangles for game sprites
     const graphics = this.add.graphics();
     
-    // Player pod (cyan rectangle)
-    graphics.fillStyle(0x00FFFF);
-    graphics.fillRect(0, 0, 40, 40);
-    graphics.generateTexture('player-pod', 40, 40);
+    // Player pod - now using the loaded SVG image
+    // We're using the player-ship image directly in PlayerPod class
+    // No need to generate a texture for player-pod anymore
     
-    // Astronaut (green circle)
-    graphics.clear();
-    graphics.fillStyle(0x00FF88);
-    graphics.fillCircle(15, 15, 15);
-    graphics.generateTexture('astronaut', 30, 30);
+    // Astronaut - now using the loaded SVG image
+    // No need to generate a texture for astronaut anymore
+    // The astronaut sprite will be used directly
     
     // Thruster flame (orange)
     graphics.clear();
@@ -135,13 +151,9 @@ export class GameScene extends Phaser.Scene {
     graphics.fillTriangle(0, 0, 10, 5, 0, 10);
     graphics.generateTexture('thruster-flame', 10, 10);
     
-    // Debris (gray irregular shape)
-    graphics.clear();
-    graphics.fillStyle(0x666666);
-    graphics.fillRect(0, 0, 25, 25);
-    graphics.fillRect(5, -5, 15, 15);
-    graphics.fillRect(-3, 8, 20, 12);
-    graphics.generateTexture('debris', 30, 30);
+    // Debris - now using the loaded SVG image
+    // No need to generate a texture for debris anymore
+    // The debris sprite will be used directly
     
     graphics.destroy();
   }
@@ -184,7 +196,7 @@ export class GameScene extends Phaser.Scene {
     }
     
     positions.forEach(pos => {
-      const target = new RescueTarget(this, pos.x, pos.y, 'astronaut');
+      const target = new RescueTarget(this, pos.x, pos.y, 'astronaut-sprite');
       this.rescueTargets.push(target);
     });
   }
@@ -197,6 +209,47 @@ export class GameScene extends Phaser.Scene {
       const debrisObj = new Debris(this, x, y);
       this.debris.push(debrisObj);
     }
+  }
+
+  private createRescueStation() {
+    // Create a visual marker for the rescue station at the center of the screen
+    const stationX = 400;
+    const stationY = 300;
+    
+    // Create a container for the station elements
+    this.rescueStation = this.add.container(stationX, stationY);
+    
+    // Create the outer circle (docking area)
+    const outerCircle = this.add.circle(0, 0, 80, 0x3366ff, 0.2);
+    
+    // Create the inner circle (station core)
+    const innerCircle = this.add.circle(0, 0, 40, 0x3366ff, 0.4);
+    
+    // Create pulsing effect for better visibility
+    const pulseCircle = this.add.circle(0, 0, 60, 0xffffff, 0.1);
+    
+    // Add text label
+    const label = this.add.text(0, -95, 'RESCUE STATION', {
+      fontFamily: 'Arial',
+      fontSize: '14px',
+      color: '#3366ff'
+    }).setOrigin(0.5);
+    
+    // Add all elements to the container
+    this.rescueStation.add([outerCircle, innerCircle, pulseCircle, label]);
+    
+    // Create a pulsing animation
+    this.tweens.add({
+      targets: pulseCircle,
+      alpha: 0.3,
+      scale: 1.2,
+      duration: 1500,
+      yoyo: true,
+      repeat: -1
+    });
+    
+    // Set depth to be behind player but above background
+    this.rescueStation.setDepth(-0.5);
   }
 
   private setupInput() {
@@ -257,12 +310,13 @@ export class GameScene extends Phaser.Scene {
           this.towedAstronauts.push(target);
           
           // Increase player mass
-          this.player.increaseMass(3);
+          this.player.increaseMass(1);
           
           // Show educational message about mass
           this.educationalOverlay.show(
             "Newton's 2nd Law",
-            `Towing astronaut ${this.towedAstronauts.length}: Increased mass reduces acceleration (F = ma)!`
+            `Towing astronaut ${this.towedAstronauts.length}: Increased mass reduces acceleration (F = ma)!`,
+            true // Auto-hide after 3 seconds
           );
           break; // Only rescue one at a time
         }
@@ -290,7 +344,8 @@ export class GameScene extends Phaser.Scene {
       
       this.educationalOverlay.show(
         "Astronauts Delivered!",
-        `${delivered} astronauts safely delivered! Mass reduced, acceleration restored.`
+        `${delivered} astronauts safely delivered! Mass reduced, acceleration restored.`,
+        true // Auto-hide after 3 seconds
       );
     }
   }
@@ -312,11 +367,15 @@ export class GameScene extends Phaser.Scene {
     // Win condition: all astronauts rescued and delivered
     if (this.rescueTargets.length === 0 && this.towedAstronauts.length === 0) {
       console.log(`Level ${this.level} complete! Rescued targets: ${this.rescueTargets.length}, Towed: ${this.towedAstronauts.length}`);
-      if (this.level === 1) {
-        this.advanceToLevel2();
-      } else {
-        this.gameWin();
-      }
+      
+      // Add a small delay before showing level completion to ensure any existing overlays are closed
+      this.time.delayedCall(500, () => {
+        if (this.level === 1) {
+          this.advanceToLevel2();
+        } else {
+          this.gameWin();
+        }
+      });
     }
     
     // Lose condition: time up
@@ -325,13 +384,20 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  // Track last collision time to prevent multiple overlays
+  private lastCollisionTime = 0;
+  private collisionCooldown = 1000; // 1 second cooldown between collision messages
+  
   private checkCollisions() {
     const playerPos = this.player.getPosition();
     const playerVel = this.player.getVelocity();
     const collisionRange = 35;
+    const currentTime = this.time.now;
+    let collisionOccurred = false;
     
     // Check player vs debris collisions
-    this.debris.forEach(debris => {
+    for (let i = 0; i < this.debris.length; i++) {
+      const debris = this.debris[i];
       const distance = Phaser.Math.Distance.Between(
         playerPos.x, playerPos.y,
         debris.x, debris.y
@@ -342,57 +408,179 @@ export class GameScene extends Phaser.Scene {
         const newVel = debris.handleCollision(playerVel, this.player.getMass());
         this.player.setVelocity(newVel.x, newVel.y);
         
-        // Show educational message
-        this.educationalOverlay.show(
-          "Newton's 3rd Law",
-          "Collision! Momentum transferred between objects - equal and opposite reaction!"
-        );
-        
-        // Consume fuel due to collision
-        this.consumeFuel(5);
-      }
-    });
-    
-    // Check towed astronauts vs debris collisions
-    this.towedAstronauts.forEach(astronaut => {
-      this.debris.forEach(debris => {
-        const distance = Phaser.Math.Distance.Between(
-          astronaut.x, astronaut.y,
-          debris.x, debris.y
-        );
-        
-        if (distance < 30) {
-          // Astronaut gets knocked away
-          const knockDirection = Phaser.Math.Angle.Between(debris.x, debris.y, astronaut.x, astronaut.y);
-          const knockForce = 20;
-          astronaut.x += Math.cos(knockDirection) * knockForce;
-          astronaut.y += Math.sin(knockDirection) * knockForce;
+        // Only show overlay if enough time has passed since last collision
+        if (currentTime - this.lastCollisionTime > this.collisionCooldown) {
+          this.lastCollisionTime = currentTime;
+          
+          // Show educational message
+          if (this.educationalOverlay.isOverlayVisible()) {
+            this.educationalOverlay.hide();
+          }
+          
+          this.time.delayedCall(100, () => {
+            this.educationalOverlay.show(
+              "Newton's 3rd Law",
+              "Collision! Momentum transferred between objects - equal and opposite reaction!",
+              true // Auto-hide after 3 seconds
+            );
+          });
         }
+        
+        // Break after handling one collision to prevent multiple in same frame
+        collisionOccurred = true;
+        break;
+      }
+    }
+    
+    // Only check astronaut collisions if no player collision occurred
+    if (!collisionOccurred) {
+      // Check towed astronauts vs debris collisions
+      this.towedAstronauts.forEach(astronaut => {
+        this.debris.forEach(debris => {
+          const distance = Phaser.Math.Distance.Between(
+            astronaut.x, astronaut.y,
+            debris.x, debris.y
+          );
+          
+          if (distance < 30) {
+            // Astronaut gets knocked away - use smoother movement
+            const knockDirection = Phaser.Math.Angle.Between(debris.x, debris.y, astronaut.x, astronaut.y);
+            const knockForce = 20;
+            
+            // Use tweens for smoother movement
+            this.tweens.add({
+              targets: astronaut,
+              x: astronaut.x + Math.cos(knockDirection) * knockForce,
+              y: astronaut.y + Math.sin(knockDirection) * knockForce,
+              duration: 200,
+              ease: 'Power2'
+            });
+          }
+        });
       });
-    });
+    }
   }
 
   private advanceToLevel2() {
     if (!this.gameStarted) return;
     this.gameStarted = false;
     
-    this.educationalOverlay.show(
-      "Level 1 Complete!",
-      "Great! Now try Level 2 with moving debris and multiple astronauts. Press SPACE to continue."
-    );
+    // Force hide any existing overlays first
+    if (this.educationalOverlay.isOverlayVisible()) {
+      this.educationalOverlay.hide();
+    }
     
-    // Advance to level 2 after delay
-    this.time.delayedCall(3000, () => {
-      this.level = 2;
-      this.timeRemaining = 180; // 3 minutes for level 2
-      this.fuel = 100; // Refuel
-      this.debris = []; // Clear any existing debris
-      this.rescueTargets = []; // Clear existing targets
-      this.towedAstronauts = [];
-      this.player.resetMass();
-      this.createRescueTargets(); // Create new targets with debris
-      this.gameStarted = true;
+    // Create a custom overlay for level transition that doesn't use the standard space key handler
+    this.createLevelTransitionOverlay();
+  }
+  
+  private createLevelTransitionOverlay() {
+    const gameWidth = this.sys.game.config.width as number;
+    const gameHeight = this.sys.game.config.height as number;
+    
+    // Create container
+    const overlay = this.add.container(gameWidth / 2, gameHeight / 2);
+    overlay.setDepth(200);
+    
+    // Semi-transparent background
+    const background = this.add.graphics();
+    background.fillStyle(0x0B1426, 0.9);
+    background.fillRoundedRect(-200, -100, 400, 200, 16);
+    background.lineStyle(3, 0x00E5FF);
+    background.strokeRoundedRect(-200, -100, 400, 200, 16);
+    
+    // Title text
+    const titleText = this.add.text(0, -60, "Level 1 Complete!", {
+      fontSize: '24px',
+      fontFamily: 'Orbitron, monospace',
+      color: '#00E5FF',
+      align: 'center'
     });
+    titleText.setOrigin(0.5);
+    
+    // Description text
+    const descriptionText = this.add.text(0, -10, 
+      "Great! Now try Level 2 with moving debris and multiple astronauts. Press SPACE to continue.", {
+      fontSize: '16px',
+      fontFamily: 'Orbitron, monospace',
+      color: '#FFFFFF',
+      align: 'center',
+      wordWrap: { width: 360, useAdvancedWrap: true }
+    });
+    descriptionText.setOrigin(0.5);
+    
+    // Close button
+    const closeButton = this.add.text(0, 60, 'PRESS SPACE TO CONTINUE', {
+      fontSize: '14px',
+      fontFamily: 'Orbitron, monospace',
+      color: '#FF6600',
+      align: 'center'
+    });
+    closeButton.setOrigin(0.5);
+    closeButton.setInteractive({ useHandCursor: true });
+    
+    // Add pulsing effect to close button
+    this.tweens.add({
+      targets: closeButton,
+      alpha: { from: 0.7, to: 1 },
+      duration: 800,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+    
+    // Add all elements to container
+    overlay.add([background, titleText, descriptionText, closeButton]);
+    
+    // Entrance animation
+    overlay.setScale(0);
+    overlay.setAlpha(0);
+    
+    this.tweens.add({
+      targets: overlay,
+      scale: { from: 0, to: 1 },
+      alpha: { from: 0, to: 1 },
+      duration: 300,
+      ease: 'Back.easeOut'
+    });
+    
+    // Setup direct space key handler for level transition
+    const spaceKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    
+    const advanceLevel = () => {
+      // Remove all listeners
+      if (spaceKey) spaceKey.off('down', advanceLevel);
+      closeButton.off('pointerdown', advanceLevel);
+      this.input.off('pointerdown', advanceLevel);
+      
+      // Exit animation
+      this.tweens.add({
+        targets: overlay,
+        scale: { from: 1, to: 0 },
+        alpha: { from: 1, to: 0 },
+        duration: 200,
+        ease: 'Back.easeIn',
+        onComplete: () => {
+          overlay.destroy();
+          
+          // Setup level 2
+          this.level = 2;
+          this.timeRemaining = 180; // 3 minutes for level 2
+          this.fuel = 100; // Refuel
+          this.debris = []; // Clear any existing debris
+          this.rescueTargets = []; // Clear existing targets
+          this.towedAstronauts = [];
+          this.player.resetMass();
+          this.createRescueTargets(); // Create new targets with debris
+          this.gameStarted = true;
+        }
+      });
+    };
+    
+    // Add multiple ways to advance to level 2
+    if (spaceKey) spaceKey.on('down', advanceLevel);
+    closeButton.on('pointerdown', advanceLevel);
+    this.input.once('pointerdown', advanceLevel);
   }
 
   private gameWin() {
@@ -401,26 +589,43 @@ export class GameScene extends Phaser.Scene {
     
     console.log('Game won! Showing overlay...');
     
-    // Show overlay first, then pause
-    this.educationalOverlay.show(
-      "Mission Complete!",
-      `Great job! You've demonstrated all three of Newton's Laws of Motion. Score: ${this.score}`
-    );
+    // Force hide any existing overlays first
+    if (this.educationalOverlay.isOverlayVisible()) {
+      this.educationalOverlay.hide();
+    }
     
-    // Pause after a short delay to ensure overlay is shown
-    this.time.delayedCall(100, () => {
-      this.scene.pause();
+    // Add a small delay before showing the win message
+    this.time.delayedCall(200, () => {
+      // Show overlay first, then pause
+      this.educationalOverlay.show(
+        "Mission Complete!",
+        `Great job! You've demonstrated all three of Newton's Laws of Motion. Score: ${this.score}`
+      );
+      
+      // Pause after a short delay to ensure overlay is shown
+      this.time.delayedCall(100, () => {
+        this.scene.pause();
+      });
     });
   }
 
   private gameOver() {
     if (!this.gameStarted) return; // Prevent double trigger  
     this.gameStarted = false;
-    this.scene.pause();
-    this.educationalOverlay.show(
-      "Mission Failed",
-      "Time's up! Try again and remember to use Newton's Laws to move efficiently through space."
-    );
+    
+    // Force hide any existing overlays first
+    if (this.educationalOverlay.isOverlayVisible()) {
+      this.educationalOverlay.hide();
+    }
+    
+    // Add a small delay before showing the game over message
+    this.time.delayedCall(200, () => {
+      this.scene.pause();
+      this.educationalOverlay.show(
+        "Mission Failed",
+        "Time's up! Try again and remember to use Newton's Laws to move efficiently through space."
+      );
+    });
   }
 
   // Public methods for UI interaction

@@ -3,6 +3,7 @@ import * as Phaser from 'phaser';
 export class GameHUD {
   private scene: Phaser.Scene;
   private hudElements: { [key: string]: Phaser.GameObjects.Text } = {};
+  private hudGraphics: { [key: string]: Phaser.GameObjects.Graphics } = {};
   private velocityArrow?: Phaser.GameObjects.Graphics;
   private thrustArrow?: Phaser.GameObjects.Graphics;
 
@@ -20,35 +21,51 @@ export class GameHUD {
       strokeThickness: 2
     };
 
-    // Get game height for bottom positioning
-    const gameHeight = this.scene.sys.game.config.height as number;
+    const gameWidth = this.scene.sys.game.config.width as number;
+    const centerX = gameWidth / 2;
     
-    // Score (bottom-left)
-    this.hudElements.scoreLabel = this.scene.add.text(20, gameHeight - 120, 'SCORE:', textStyle);
-    this.hudElements.scoreValue = this.scene.add.text(20, gameHeight - 95, '0', {
+    // Create top bar background
+    const topBarBg = this.scene.add.graphics();
+    topBarBg.fillStyle(0x0B1426, 0.7);
+    topBarBg.fillRect(0, 0, gameWidth, 40);
+    topBarBg.setDepth(99);
+    
+    // Score (centered, first element)
+    this.hudElements.scoreLabel = this.scene.add.text(centerX - 150, 10, 'SCORE:', textStyle);
+    this.hudElements.scoreValue = this.scene.add.text(centerX - 90, 10, '0', {
       ...textStyle,
-      fontSize: '20px',
+      fontSize: '18px',
       color: '#FFFFFF'
     });
 
-    // Fuel (bottom-left, below score)
-    this.hudElements.fuelLabel = this.scene.add.text(20, gameHeight - 80, 'FUEL:', textStyle);
-    this.hudElements.fuelValue = this.scene.add.text(20, gameHeight - 55, '100%', {
+    // Fuel (centered, middle element)
+    this.hudElements.fuelLabel = this.scene.add.text(centerX - 30, 10, 'FUEL:', textStyle);
+    this.hudElements.fuelValue = this.scene.add.text(centerX + 30, 10, '100%', {
       ...textStyle,
       fontSize: '18px',
       color: '#00FF88'
     });
+    
+    // Fuel bar indicator
+    this.hudGraphics.fuelBarBg = this.scene.add.graphics();
+    this.hudGraphics.fuelBarBg.fillStyle(0x333333, 0.8);
+    this.hudGraphics.fuelBarBg.fillRect(centerX - 30, 30, 100, 6);
+    this.hudGraphics.fuelBarBg.setDepth(100);
+    
+    this.hudGraphics.fuelBar = this.scene.add.graphics();
+    this.hudGraphics.fuelBar.fillStyle(0x00FF88, 1);
+    this.hudGraphics.fuelBar.fillRect(centerX - 30, 30, 100, 6);
+    this.hudGraphics.fuelBar.setDepth(101);
 
-    // Time (bottom-left, below fuel)
-    this.hudElements.timeLabel = this.scene.add.text(20, gameHeight - 40, 'TIME:', textStyle);
-    this.hudElements.timeValue = this.scene.add.text(20, gameHeight - 15, '02:00', {
+    // Time (centered, last element)
+    this.hudElements.timeLabel = this.scene.add.text(centerX + 90, 10, 'TIME:', textStyle);
+    this.hudElements.timeValue = this.scene.add.text(centerX + 150, 10, '02:00', {
       ...textStyle,
       fontSize: '18px',
       color: '#FF6600'
     });
 
-    // Velocity indicator (top-right) - moved down to avoid header overlap
-    const gameWidth = this.scene.sys.game.config.width as number;
+    // Velocity indicator (top-right corner)
     this.hudElements.velocityLabel = this.scene.add.text(gameWidth - 150, 60, 'VELOCITY:', {
       ...textStyle,
       fontSize: '14px'
@@ -98,14 +115,29 @@ export class GameHUD {
     const fuelPercent = Math.max(0, gameState.fuel);
     this.hudElements.fuelValue.setText(`${Math.round(fuelPercent)}%`);
     
+    // Update fuel bar width based on percentage
+    const centerX = (this.scene.sys.game.config.width as number) / 2;
+    const barWidth = 100 * (fuelPercent / 100);
+    
+    // Clear and redraw the fuel bar
+    this.hudGraphics.fuelBar.clear();
+    
     // Change fuel color based on level
+    let fuelColor = 0x00FF88; // Green
     if (fuelPercent > 50) {
       this.hudElements.fuelValue.setColor('#00FF88');
+      fuelColor = 0x00FF88;
     } else if (fuelPercent > 25) {
       this.hudElements.fuelValue.setColor('#FFD700');
+      fuelColor = 0xFFD700;
     } else {
       this.hudElements.fuelValue.setColor('#FF4444');
+      fuelColor = 0xFF4444;
     }
+    
+    // Draw the fuel bar with updated width and color
+    this.hudGraphics.fuelBar.fillStyle(fuelColor, 1);
+    this.hudGraphics.fuelBar.fillRect(centerX - 30, 30, barWidth, 6);
 
     // Update time
     const minutes = Math.floor(gameState.timeRemaining / 60);
@@ -197,6 +229,7 @@ export class GameHUD {
 
   public destroy() {
     Object.values(this.hudElements).forEach(element => element.destroy());
+    Object.values(this.hudGraphics).forEach(graphic => graphic.destroy());
     this.velocityArrow?.destroy();
     this.thrustArrow?.destroy();
   }

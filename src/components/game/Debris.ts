@@ -6,7 +6,7 @@ export class Debris extends Phaser.GameObjects.Sprite {
   private rotationSpeed: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, 'debris');
+    super(scene, x, y, 'debris-sprite');
     
     scene.add.existing(this);
     this.setOrigin(0.5);

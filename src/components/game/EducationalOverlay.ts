@@ -16,19 +16,29 @@ export class EducationalOverlay {
   public show(title: string, description: string, autoHide = false) {
     if (this.isVisible) {
       this.hide();
+      // Add a small delay before showing the new overlay to ensure proper cleanup
+      this.scene.time.delayedCall(100, () => {
+        this.createOverlayInternal(title, description, autoHide);
+      });
+    } else {
+      this.createOverlayInternal(title, description, autoHide);
     }
+  }
 
-    this.createOverlay(title, description);
+  private createOverlayInternal(title: string, description: string, autoHide = false) {
+    this.createOverlay(title, description, autoHide);
     this.isVisible = true;
 
     if (autoHide) {
       this.scene.time.delayedCall(3000, () => {
-        this.hide();
+        if (this.isVisible) {
+          this.hide();
+        }
       });
     }
   }
 
-  private createOverlay(title: string, description: string) {
+  private createOverlay(title: string, description: string, autoHide = false) {
     const gameWidth = this.scene.sys.game.config.width as number;
     const gameHeight = this.scene.sys.game.config.height as number;
 
@@ -62,29 +72,33 @@ export class EducationalOverlay {
     });
     this.descriptionText.setOrigin(0.5);
 
-    // Close button
-    this.closeButton = this.scene.add.text(0, 60, 'PRESS SPACE TO CONTINUE', {
-      fontSize: '14px',
-      fontFamily: 'Orbitron, monospace',
-      color: '#FF6600',
-      align: 'center'
-    });
-    this.closeButton.setOrigin(0.5);
-    this.closeButton.setInteractive({ useHandCursor: true });
-    this.closeButton.on('pointerdown', () => this.hide());
+    // Close button - only show for non-auto-hide overlays
+    if (!autoHide) {
+      this.closeButton = this.scene.add.text(0, 60, 'PRESS SPACE TO CONTINUE', {
+        fontSize: '14px',
+        fontFamily: 'Orbitron, monospace',
+        color: '#FF6600',
+        align: 'center'
+      });
+      this.closeButton.setOrigin(0.5);
+      this.closeButton.setInteractive({ useHandCursor: true });
+      this.closeButton.on('pointerdown', () => this.hide());
 
-    // Add pulsing effect to close button
-    this.scene.tweens.add({
-      targets: this.closeButton,
-      alpha: { from: 0.7, to: 1 },
-      duration: 800,
-      ease: 'Sine.easeInOut',
-      yoyo: true,
-      repeat: -1
-    });
+      // Add pulsing effect to close button
+      this.scene.tweens.add({
+        targets: this.closeButton,
+        alpha: { from: 0.7, to: 1 },
+        duration: 800,
+        ease: 'Sine.easeInOut',
+        yoyo: true,
+        repeat: -1
+      });
+    }
 
     // Add all elements to container
-    this.overlay.add([this.background, this.titleText, this.descriptionText, this.closeButton]);
+    const elements = [this.background, this.titleText, this.descriptionText];
+    if (this.closeButton) elements.push(this.closeButton);
+    this.overlay.add(elements);
 
     // Entrance animation
     this.overlay.setScale(0);
@@ -98,24 +112,27 @@ export class EducationalOverlay {
       ease: 'Back.easeOut'
     });
 
-    // Setup keyboard listener for spacebar
-    const spaceKey = this.scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    if (spaceKey) {
-      const onSpacePress = () => {
+    // Only setup keyboard listener for non-auto-hide overlays
+    if (!autoHide) {
+      // Setup keyboard listener for spacebar
+      const spaceKey = this.scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+      if (spaceKey) {
+        const onSpacePress = () => {
+          if (this.isVisible) {
+            this.hide();
+            spaceKey.off('down', onSpacePress);
+          }
+        };
+        spaceKey.on('down', onSpacePress);
+      }
+
+      // Click anywhere to close (keep as fallback)
+      this.scene.input.once('pointerdown', () => {
         if (this.isVisible) {
           this.hide();
-          spaceKey.off('down', onSpacePress);
         }
-      };
-      spaceKey.on('down', onSpacePress);
+      });
     }
-
-    // Click anywhere to close (keep as fallback)
-    this.scene.input.once('pointerdown', () => {
-      if (this.isVisible) {
-        this.hide();
-      }
-    });
   }
 
   public hide() {
