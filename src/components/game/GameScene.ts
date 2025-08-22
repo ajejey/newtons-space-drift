@@ -310,7 +310,7 @@ export class GameScene extends Phaser.Scene {
           this.towedAstronauts.push(target);
           
           // Increase player mass
-          this.player.increaseMass(1);
+          this.player.increaseMass(2);
           
           // Show educational message about mass
           this.educationalOverlay.show(
