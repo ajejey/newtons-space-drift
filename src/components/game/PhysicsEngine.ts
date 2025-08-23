@@ -1,8 +1,10 @@
 import * as Phaser from 'phaser';
+import { GravityWell } from './GravityWell';
 
 export class PhysicsEngine {
   private scene: Phaser.Scene;
   private bodies: any[] = [];
+  private gravityWells: GravityWell[] = [];
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -39,8 +41,18 @@ export class PhysicsEngine {
         // Sync position with game object
         body.x = (body.gameObject as any).x;
         body.y = (body.gameObject as any).y;
+        
+        // Sync velocity if the object has getVelocity method
+        if (body.gameObject.getVelocity && typeof body.gameObject.getVelocity === 'function') {
+          const vel = body.gameObject.getVelocity();
+          body.velocity.x = vel.x;
+          body.velocity.y = vel.y;
+        }
       }
     });
+
+    // Apply gravitational forces
+    this.applyGravitationalForces();
 
     // Check collisions
     this.checkCollisions();
@@ -117,6 +129,52 @@ export class PhysicsEngine {
     
     body.velocity.x += accelerationX;
     body.velocity.y += accelerationY;
+  }
+
+  public addGravityWell(gravityWell: GravityWell) {
+    this.gravityWells.push(gravityWell);
+  }
+
+  public removeGravityWell(gravityWell: GravityWell) {
+    const index = this.gravityWells.indexOf(gravityWell);
+    if (index !== -1) {
+      this.gravityWells.splice(index, 1);
+    }
+  }
+
+  public applyGravitationalForces() {
+    // Apply gravitational forces to all bodies from all gravity wells
+    this.bodies.forEach(body => {
+      if (body.gameObject && body.gameObject.active && body.affectedByGravity !== false) {
+        let totalGravityX = 0;
+        let totalGravityY = 0;
+
+        this.gravityWells.forEach(gravityWell => {
+          const force = gravityWell.calculateGravitationalForce(
+            body.x, 
+            body.y, 
+            body.mass
+          );
+          totalGravityX += force.x;
+          totalGravityY += force.y;
+        });
+
+        // Apply gravitational acceleration (F = ma, so a = F/m)
+        if (body.velocity) {
+          body.velocity.x += (totalGravityX / body.mass) * 0.016; // 60fps delta approximation
+          body.velocity.y += (totalGravityY / body.mass) * 0.016;
+        }
+        
+        // If this is a player pod or other object with setVelocity method
+        if (body.gameObject.setVelocity && typeof body.gameObject.setVelocity === 'function') {
+          body.gameObject.setVelocity(body.velocity.x, body.velocity.y);
+        }
+      }
+    });
+  }
+
+  public getGravityWells(): GravityWell[] {
+    return this.gravityWells;
   }
 
   public getBodies() {

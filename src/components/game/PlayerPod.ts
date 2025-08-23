@@ -20,6 +20,8 @@ export class PlayerPod extends Phaser.GameObjects.Sprite {
   private currentThrust = { x: 0, y: 0 };
   private mass = 1;
   private isThrusting_flag = false;
+  private gravityTrail: Phaser.GameObjects.Graphics;
+  private trailPoints: {x: number, y: number}[] = [];
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'player-ship');
@@ -31,6 +33,9 @@ export class PlayerPod extends Phaser.GameObjects.Sprite {
     
     // Create thruster flame sprites
     this.createThrusterFlames();
+    
+    // Create gravity trail for visual feedback
+    this.createGravityTrail();
   }
 
   private createThrusterFlames() {
@@ -51,9 +56,18 @@ export class PlayerPod extends Phaser.GameObjects.Sprite {
     });
   }
 
+  private createGravityTrail() {
+    // Create graphics object for showing movement trail when affected by gravity
+    this.gravityTrail = this.scene.add.graphics();
+    this.gravityTrail.setDepth(5);
+  }
+
   update(delta: number, controls: Controls) {
     this.isThrusting_flag = false;
     this.currentThrust = { x: 0, y: 0 };
+    
+    // Store previous velocity to detect gravity effects
+    const prevVelocity = { x: this.velocity.x, y: this.velocity.y };
     
     // Check if we have fuel before allowing thrust
     const hasFuel = this.scene.scene.key === 'GameScene' ? 
@@ -90,7 +104,7 @@ export class PlayerPod extends Phaser.GameObjects.Sprite {
       y: this.currentThrust.y / this.mass
     };
     
-    // Apply acceleration to velocity
+    // Apply acceleration to velocity (thrust only - gravity is handled by PhysicsEngine)
     this.velocity.x += acceleration.x * delta * 0.1;
     this.velocity.y += acceleration.y * delta * 0.1;
     
@@ -104,6 +118,12 @@ export class PlayerPod extends Phaser.GameObjects.Sprite {
     // Newton's 1st Law: Object in motion stays in motion (no friction in space)
     this.x += this.velocity.x * delta * 0.01;
     this.y += this.velocity.y * delta * 0.01;
+    
+    // Update gravity trail if velocity changed due to external forces
+    this.updateGravityTrail(prevVelocity);
+    
+    // Update gravity trail if velocity changed due to external forces
+    this.updateGravityTrail(prevVelocity);
     
     // Keep player on screen (wrap around)
     this.wrapAroundScreen();
@@ -119,6 +139,46 @@ export class PlayerPod extends Phaser.GameObjects.Sprite {
     // Consume fuel when thrusting
     if (this.isThrusting_flag && this.scene.scene.key === 'GameScene') {
       (this.scene as GameScene).consumeFuel(0.5 * delta * 0.01);
+    }
+  }
+
+  private updateGravityTrail(prevVelocity: {x: number, y: number}) {
+    // Check if velocity changed due to external forces (gravity)
+    const thrustAccel = Math.sqrt(this.currentThrust.x * this.currentThrust.x + this.currentThrust.y * this.currentThrust.y);
+    const velocityChange = Math.sqrt(
+      Math.pow(this.velocity.x - prevVelocity.x, 2) + 
+      Math.pow(this.velocity.y - prevVelocity.y, 2)
+    );
+    
+    // If velocity changed more than expected from thrust alone, we're likely affected by gravity
+    if (velocityChange > thrustAccel * 0.1 + 0.01) {
+      // Add current position to trail
+      this.trailPoints.push({ x: this.x, y: this.y });
+      
+      // Keep only last 15 points
+      if (this.trailPoints.length > 15) {
+        this.trailPoints.shift();
+      }
+      
+      // Draw the trail
+      this.gravityTrail.clear();
+      if (this.trailPoints.length > 1) {
+        this.gravityTrail.lineStyle(2, 0x00E5FF, 0.6);
+        this.gravityTrail.beginPath();
+        this.gravityTrail.moveTo(this.trailPoints[0].x, this.trailPoints[0].y);
+        
+        for (let i = 1; i < this.trailPoints.length; i++) {
+          const alpha = i / this.trailPoints.length; // Fade older points
+          this.gravityTrail.lineStyle(2, 0x00E5FF, alpha * 0.6);
+          this.gravityTrail.lineTo(this.trailPoints[i].x, this.trailPoints[i].y);
+        }
+        
+        this.gravityTrail.strokePath();
+      }
+    } else {
+      // Clear trail if not affected by gravity
+      this.trailPoints = [];
+      this.gravityTrail.clear();
     }
   }
 
@@ -202,6 +262,9 @@ export class PlayerPod extends Phaser.GameObjects.Sprite {
 
   destroy() {
     this.thrusterFlames.forEach(flame => flame.destroy());
+    if (this.gravityTrail) {
+      this.gravityTrail.destroy();
+    }
     super.destroy();
   }
 }

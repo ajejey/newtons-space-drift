@@ -5,6 +5,8 @@ import { Debris } from './Debris';
 import { PhysicsEngine } from './PhysicsEngine';
 import { GameHUD } from './GameHUD';
 import { EducationalOverlay } from './EducationalOverlay';
+import { GravityWell } from './GravityWell';
+import { TrajectoryHelper } from './TrajectoryHelper';
 
 export class GameScene extends Phaser.Scene {
   private player!: PlayerPod;
@@ -15,6 +17,9 @@ export class GameScene extends Phaser.Scene {
   private gameHUD!: GameHUD;
   private educationalOverlay!: EducationalOverlay;
   private rescueStation!: Phaser.GameObjects.Container;
+  private gravityWells: GravityWell[] = [];
+  private trajectoryHelper!: TrajectoryHelper;
+  private lastTrajectoryTime = 0;
   
   // Game state
   private score = 0;
@@ -78,6 +83,13 @@ export class GameScene extends Phaser.Scene {
     // Create player
     this.player = new PlayerPod(this, 400, 300);
     
+    // Add player to physics engine for gravity effects
+    this.physicsEngine.addBody(this.player, { 
+      mass: 1, 
+      affectedByGravity: true,
+      velocity: { x: 0, y: 0 }
+    });
+    
     // Create rescue targets
     this.createRescueTargets();
     
@@ -89,6 +101,9 @@ export class GameScene extends Phaser.Scene {
     
     // Create educational overlay
     this.educationalOverlay = new EducationalOverlay(this);
+    
+    // Create trajectory helper (only used in Level 3)
+    this.trajectoryHelper = new TrajectoryHelper(this);
     
     // Start game timer
     this.startGameTimer();
@@ -129,8 +144,21 @@ export class GameScene extends Phaser.Scene {
       isThrusting: this.player.isThrusting()
     });
     
-    // Check win/lose conditions
+  // Check win/lose conditions
     this.checkGameState();
+    
+    // Update gravity wells if present
+    this.gravityWells.forEach(gravityWell => gravityWell.update(delta));
+    
+    // Check for gravity field interactions in Level 3
+    if (this.level === 3 && this.gameStarted) {
+      this.checkGravityInteractions();
+    }
+    
+    // Show trajectory prediction in Level 3 when player is moving but not thrusting
+    if (this.level === 3 && this.gameStarted && !this.player.isThrusting()) {
+      this.updateTrajectoryHelper(time);
+    }
   }
 
   private createSimpleSprites() {
@@ -193,12 +221,104 @@ export class GameScene extends Phaser.Scene {
         { x: 350, y: 100 }
       ];
       this.createDebris();
+    } else if (this.level === 3) {
+      // Level 3: Gravity wells with strategically placed astronauts
+      this.createGravityWells();
+      positions = [
+        { x: 200, y: 200 }, // Near first gravity well
+        { x: 600, y: 400 }, // Near second gravity well
+        { x: 100, y: 500 }, // Requiring orbital mechanics
+        { x: 700, y: 100 }, // Requiring slingshot
+        { x: 300, y: 500 }, // Between gravity wells
+        { x: 500, y: 150 }  // Strategic position
+      ];
+      // Add some debris for extra challenge
+      this.createDebris();
     }
     
     positions.forEach(pos => {
       const target = new RescueTarget(this, pos.x, pos.y, 'astronaut-sprite');
       this.rescueTargets.push(target);
     });
+  }
+
+  private gravityMessageCooldown = 0;
+  
+  private checkGravityInteractions() {
+    const playerPos = this.player.getPosition();
+    const currentTime = this.time.now;
+    
+    // Check if player is in any gravity field
+    for (const gravityWell of this.gravityWells) {
+      if (gravityWell.isInGravityField(playerPos.x, playerPos.y)) {
+        const strength = gravityWell.getGravityStrength(playerPos.x, playerPos.y);
+        
+        // Show messages based on gravity strength and cooldown
+        if (currentTime - this.gravityMessageCooldown > 8000) { // 8 second cooldown
+          this.gravityMessageCooldown = currentTime;
+          
+          if (strength > 0.7) {
+            this.educationalOverlay.show(
+              "Strong Gravity Field",
+              "You're in a strong gravitational field! Feel the pull? This demonstrates action at a distance.",
+              true
+            );
+          } else if (strength > 0.3) {
+            const playerVel = this.player.getVelocity();
+            const speed = Math.sqrt(playerVel.x * playerVel.x + playerVel.y * playerVel.y);
+            
+            if (speed > 30) {
+              this.educationalOverlay.show(
+                "Orbital Mechanics",
+                "Moving fast enough? You might achieve orbit! Balance speed and gravity for efficient travel.",
+                true
+              );
+            } else {
+              this.educationalOverlay.show(
+                "Gravitational Influence",
+                "Notice how your path curves? Gravity is changing your motion without you firing thrusters!",
+                true
+              );
+            }
+          }
+        }
+        break; // Only show message for first gravity well encountered
+      }
+    }
+  }
+
+  private updateTrajectoryHelper(time: number) {
+    // Only update trajectory every 500ms to avoid performance issues
+    if (time - this.lastTrajectoryTime < 500) return;
+    this.lastTrajectoryTime = time;
+    
+    const playerVel = this.player.getVelocity();
+    const playerPos = this.player.getPosition();
+    const speed = Math.sqrt(playerVel.x * playerVel.x + playerVel.y * playerVel.y);
+    
+    // Only show trajectory if player has meaningful velocity
+    if (speed > 10 && this.gravityWells.length > 0) {
+      this.trajectoryHelper.setGravityWells(this.gravityWells);
+      this.trajectoryHelper.showTrajectory(
+        playerPos.x, 
+        playerPos.y, 
+        playerVel.x, 
+        playerVel.y, 
+        40 // 40 steps for prediction
+      );
+    }
+  }
+
+  private createGravityWells() {
+    // Create two gravity wells for Level 3
+    const gravityWell1 = new GravityWell(this, 200, 300, 80, 35, 150);
+    const gravityWell2 = new GravityWell(this, 600, 200, 60, 30, 120);
+    
+    this.gravityWells.push(gravityWell1, gravityWell2);
+    
+    // Add gravity wells to physics engine
+    this.physicsEngine.addGravityWell(gravityWell1);
+    this.physicsEngine.addGravityWell(gravityWell2);
   }
 
   private createDebris() {
@@ -312,12 +432,23 @@ export class GameScene extends Phaser.Scene {
           // Increase player mass
           this.player.increaseMass(1);
           
-          // Show educational message about mass
+    // Show educational message about mass
           this.educationalOverlay.show(
             "Newton's 2nd Law",
             `Towing astronaut ${this.towedAstronauts.length}: Increased mass reduces acceleration (F = ma)!`,
             true // Auto-hide after 3 seconds
           );
+          
+          // Show gravity interaction message in Level 3
+          if (this.level === 3 && this.gravityWells.length > 0) {
+            this.time.delayedCall(3500, () => {
+              this.educationalOverlay.show(
+                "Gravity + Mass Effect",
+                "Extra mass also affects how gravity pulls you! Heavier objects fall faster?",
+                true
+              );
+            });
+          }
           break; // Only rescue one at a time
         }
       }
@@ -347,6 +478,17 @@ export class GameScene extends Phaser.Scene {
         `${delivered} astronauts safely delivered! Mass reduced, acceleration restored.`,
         true // Auto-hide after 3 seconds
       );
+      
+      // Show gravity-specific message in Level 3
+      if (this.level === 3) {
+        this.time.delayedCall(3500, () => {
+          this.educationalOverlay.show(
+            "Gravity Well Mastery",
+            "Use gravity to your advantage! Slingshot around wells to save fuel and reach distant targets.",
+            true
+          );
+        });
+      }
     }
   }
 
@@ -372,6 +514,8 @@ export class GameScene extends Phaser.Scene {
       this.time.delayedCall(500, () => {
         if (this.level === 1) {
           this.advanceToLevel2();
+        } else if (this.level === 2) {
+          this.advanceToLevel3();
         } else {
           this.gameWin();
         }
@@ -583,6 +727,144 @@ export class GameScene extends Phaser.Scene {
     this.input.once('pointerdown', advanceLevel);
   }
 
+  private advanceToLevel3() {
+    if (!this.gameStarted) return;
+    this.gameStarted = false;
+    
+    // Force hide any existing overlays first
+    if (this.educationalOverlay.isOverlayVisible()) {
+      this.educationalOverlay.hide();
+    }
+    
+    // Create a custom overlay for level 3 transition
+    this.createLevel3TransitionOverlay();
+  }
+  
+  private createLevel3TransitionOverlay() {
+    const gameWidth = this.sys.game.config.width as number;
+    const gameHeight = this.sys.game.config.height as number;
+    
+    // Create container
+    const overlay = this.add.container(gameWidth / 2, gameHeight / 2);
+    overlay.setDepth(200);
+    
+    // Semi-transparent background
+    const background = this.add.graphics();
+    background.fillStyle(0x0B1426, 0.9);
+    background.fillRoundedRect(-250, -120, 500, 240, 16);
+    background.lineStyle(3, 0x00E5FF);
+    background.strokeRoundedRect(-250, -120, 500, 240, 16);
+    
+    // Title text
+    const titleText = this.add.text(0, -80, "Level 2 Complete!", {
+      fontSize: '24px',
+      fontFamily: 'Orbitron, monospace',
+      color: '#00E5FF',
+      align: 'center'
+    });
+    titleText.setOrigin(0.5);
+    
+    // Description text
+    const descriptionText = this.add.text(0, -20, 
+      "Excellent! Now try Level 3 with GRAVITY WELLS!\nUse gravitational forces to slingshot and reach distant astronauts.\nWatch for curved paths and orbital mechanics!", {
+      fontSize: '16px',
+      fontFamily: 'Orbitron, monospace',
+      color: '#FFFFFF',
+      align: 'center',
+      wordWrap: { width: 450, useAdvancedWrap: true }
+    });
+    descriptionText.setOrigin(0.5);
+    
+    // Close button
+    const closeButton = this.add.text(0, 80, 'PRESS SPACE TO START LEVEL 3', {
+      fontSize: '14px',
+      fontFamily: 'Orbitron, monospace',
+      color: '#FF6600',
+      align: 'center'
+    });
+    closeButton.setOrigin(0.5);
+    closeButton.setInteractive({ useHandCursor: true });
+    
+    // Add pulsing effect to close button
+    this.tweens.add({
+      targets: closeButton,
+      alpha: { from: 0.7, to: 1 },
+      duration: 800,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+    
+    // Add all elements to container
+    overlay.add([background, titleText, descriptionText, closeButton]);
+    
+    // Entrance animation
+    overlay.setScale(0);
+    overlay.setAlpha(0);
+    
+    this.tweens.add({
+      targets: overlay,
+      scale: { from: 0, to: 1 },
+      alpha: { from: 0, to: 1 },
+      duration: 300,
+      ease: 'Back.easeOut'
+    });
+    
+    // Setup direct space key handler for level transition
+    const spaceKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    
+    const advanceLevel = () => {
+      // Remove all listeners
+      if (spaceKey) spaceKey.off('down', advanceLevel);
+      closeButton.off('pointerdown', advanceLevel);
+      this.input.off('pointerdown', advanceLevel);
+      
+      // Exit animation
+      this.tweens.add({
+        targets: overlay,
+        scale: { from: 1, to: 0 },
+        alpha: { from: 1, to: 0 },
+        duration: 200,
+        ease: 'Back.easeIn',
+        onComplete: () => {
+          overlay.destroy();
+          
+          // Setup level 3
+          this.level = 3;
+          this.timeRemaining = 240; // 4 minutes for level 3 (gravity adds complexity)
+          this.fuel = 100; // Refuel
+          this.debris = []; // Clear any existing debris
+          this.rescueTargets = []; // Clear existing targets
+          this.towedAstronauts = [];
+          this.gravityWells = []; // Clear existing gravity wells
+          this.player.resetMass();
+          
+          // Clear any existing gravity wells from physics engine
+          this.physicsEngine.getGravityWells().forEach(well => {
+            this.physicsEngine.removeGravityWell(well);
+          });
+          
+          this.createRescueTargets(); // Create new targets with gravity wells
+          this.gameStarted = true;
+          
+          // Show initial Level 3 guidance after a short delay
+          this.time.delayedCall(1000, () => {
+            this.educationalOverlay.show(
+              "Level 3: Gravitational Forces",
+              "Welcome to space with gravity! Blue circles show gravity wells. Watch how they bend your path and use them for slingshot maneuvers!",
+              true
+            );
+          });
+        }
+      });
+    };
+    
+    // Add multiple ways to advance to level 3
+    if (spaceKey) spaceKey.on('down', advanceLevel);
+    closeButton.on('pointerdown', advanceLevel);
+    this.input.once('pointerdown', advanceLevel);
+  }
+
   private gameWin() {
     if (!this.gameStarted) return; // Prevent double trigger
     this.gameStarted = false;
@@ -599,7 +881,7 @@ export class GameScene extends Phaser.Scene {
       // Show overlay first, then pause
       this.educationalOverlay.show(
         "Mission Complete!",
-        `Great job! You've demonstrated all three of Newton's Laws of Motion. Score: ${this.score}`
+        `Outstanding! You've mastered all THREE of Newton's Laws of Motion across 3 challenging levels! Final Score: ${this.score}`
       );
       
       // Pause after a short delay to ensure overlay is shown
