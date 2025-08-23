@@ -122,9 +122,6 @@ export class PlayerPod extends Phaser.GameObjects.Sprite {
     // Update gravity trail if velocity changed due to external forces
     this.updateGravityTrail(prevVelocity);
     
-    // Update gravity trail if velocity changed due to external forces
-    this.updateGravityTrail(prevVelocity);
-    
     // Keep player on screen (wrap around)
     this.wrapAroundScreen();
     

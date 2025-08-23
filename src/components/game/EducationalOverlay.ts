@@ -8,12 +8,19 @@ export class EducationalOverlay {
   private descriptionText?: Phaser.GameObjects.Text;
   private closeButton?: Phaser.GameObjects.Text;
   private isVisible = false;
+  private autoHideTimer?: Phaser.Time.TimerEvent;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
   }
 
   public show(title: string, description: string, autoHide = false) {
+    // Clear any existing auto-hide timer
+    if (this.autoHideTimer) {
+      this.autoHideTimer.remove();
+      this.autoHideTimer = undefined;
+    }
+    
     if (this.isVisible) {
       this.hide();
       // Add a small delay before showing the new overlay to ensure proper cleanup
@@ -30,10 +37,11 @@ export class EducationalOverlay {
     this.isVisible = true;
 
     if (autoHide) {
-      this.scene.time.delayedCall(3000, () => {
+      this.autoHideTimer = this.scene.time.delayedCall(3000, () => {
         if (this.isVisible) {
           this.hide();
         }
+        this.autoHideTimer = undefined;
       });
     }
   }
@@ -137,6 +145,12 @@ export class EducationalOverlay {
 
   public hide() {
     if (!this.isVisible || !this.overlay) return;
+
+    // Clear any auto-hide timer
+    if (this.autoHideTimer) {
+      this.autoHideTimer.remove();
+      this.autoHideTimer = undefined;
+    }
 
     this.isVisible = false;
 

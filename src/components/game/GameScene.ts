@@ -43,6 +43,33 @@ export class GameScene extends Phaser.Scene {
     rescue: false
   };
 
+  // Responsive scaling helpers
+  private getGameWidth(): number {
+    return this.sys.game.config.width as number;
+  }
+
+  private getGameHeight(): number {
+    return this.sys.game.config.height as number;
+  }
+
+  private scaleX(normalizedX: number): number {
+    // Convert from 0-800 reference to actual screen width
+    return (normalizedX / 800) * this.getGameWidth();
+  }
+
+  private scaleY(normalizedY: number): number {
+    // Convert from 0-600 reference to actual screen height
+    return (normalizedY / 600) * this.getGameHeight();
+  }
+
+  private getCenterX(): number {
+    return this.getGameWidth() / 2;
+  }
+
+  private getCenterY(): number {
+    return this.getGameHeight() / 2;
+  }
+
   constructor() {
     super({ key: 'GameScene' });
   }
@@ -81,7 +108,7 @@ export class GameScene extends Phaser.Scene {
     this.createRescueStation();
     
     // Create player
-    this.player = new PlayerPod(this, 400, 300);
+    this.player = new PlayerPod(this, this.getCenterX(), this.getCenterY());
     
     // Add player to physics engine for gravity effects
     this.physicsEngine.addBody(this.player, { 
@@ -200,37 +227,40 @@ export class GameScene extends Phaser.Scene {
     let positions: { x: number; y: number }[] = [];
     
     if (this.level === 1) {
-      // Level 1: 8 astronauts, no debris
+      // Level 1: 8 astronauts, no debris (using 800x600 reference, scaled to actual screen)
       positions = [
-        { x: 121, y: 480 },
-        { x: 750, y: 150 },
-        { x: 530, y: 310 },
-        { x: 120, y: 150 },
-        { x: 615, y: 520 },
-        { x: 250, y: 225 },
-        { x: 555, y: 80 },
-        { x: 390, y: 410 }
+        { x: this.scaleX(121), y: this.scaleY(480) },
+        { x: this.scaleX(750), y: this.scaleY(150) },
+        { x: this.scaleX(530), y: this.scaleY(310) },
+        { x: this.scaleX(120), y: this.scaleY(150) },
+        { x: this.scaleX(615), y: this.scaleY(520) },
+        { x: this.scaleX(250), y: this.scaleY(225) },
+        { x: this.scaleX(555), y: this.scaleY(80) },
+        { x: this.scaleX(390), y: this.scaleY(410) }
       ];
     } else if (this.level === 2) {
-      // Level 2: Further astronauts, with debris
+      // Level 2: More astronauts with increased debris for higher difficulty
       positions = [
-        { x: 150, y: 100 },
-        { x: 650, y: 150 },
-        { x: 200, y: 450 },
-        { x: 550, y: 400 },
-        { x: 350, y: 100 }
+        { x: this.scaleX(150), y: this.scaleY(100) },
+        { x: this.scaleX(650), y: this.scaleY(150) },
+        { x: this.scaleX(200), y: this.scaleY(450) },
+        { x: this.scaleX(550), y: this.scaleY(400) },
+        { x: this.scaleX(350), y: this.scaleY(100) },
+        { x: this.scaleX(100), y: this.scaleY(300) },
+        { x: this.scaleX(700), y: this.scaleY(350) },
+        { x: this.scaleX(400), y: this.scaleY(500) }
       ];
       this.createDebris();
     } else if (this.level === 3) {
       // Level 3: Gravity wells with strategically placed astronauts
       this.createGravityWells();
       positions = [
-        { x: 200, y: 200 }, // Near first gravity well
-        { x: 600, y: 400 }, // Near second gravity well
-        { x: 100, y: 500 }, // Requiring orbital mechanics
-        { x: 700, y: 100 }, // Requiring slingshot
-        { x: 300, y: 500 }, // Between gravity wells
-        { x: 500, y: 150 }  // Strategic position
+        { x: this.scaleX(200), y: this.scaleY(200) }, // Near first gravity well
+        { x: this.scaleX(600), y: this.scaleY(400) }, // Near second gravity well
+        { x: this.scaleX(100), y: this.scaleY(500) }, // Requiring orbital mechanics
+        { x: this.scaleX(700), y: this.scaleY(100) }, // Requiring slingshot
+        { x: this.scaleX(300), y: this.scaleY(500) }, // Between gravity wells
+        { x: this.scaleX(500), y: this.scaleY(150) }  // Strategic position
       ];
       // Add some debris for extra challenge
       this.createDebris();
@@ -310,9 +340,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createGravityWells() {
-    // Create two gravity wells for Level 3
-    const gravityWell1 = new GravityWell(this, 200, 300, 80, 35, 150);
-    const gravityWell2 = new GravityWell(this, 600, 200, 60, 30, 120);
+    // Create two gravity wells for Level 3 (scaled to screen size)
+    const gravityWell1 = new GravityWell(this, this.scaleX(200), this.scaleY(300), 80, 35, 150);
+    const gravityWell2 = new GravityWell(this, this.scaleX(600), this.scaleY(200), 60, 30, 120);
     
     this.gravityWells.push(gravityWell1, gravityWell2);
     
@@ -322,10 +352,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createDebris() {
-    // Create moving debris for Level 2
-    for (let i = 0; i < 4; i++) {
-      const x = Phaser.Math.Between(100, 700);
-      const y = Phaser.Math.Between(100, 500);
+    // Create moving debris for Level 2 (scaled to screen size)
+    // More debris for increased difficulty
+    const debrisCount = 8; // Level 2 gets more debris
+    
+    for (let i = 0; i < debrisCount; i++) {
+      const x = Phaser.Math.Between(this.scaleX(100), this.scaleX(700));
+      const y = Phaser.Math.Between(this.scaleY(100), this.scaleY(500));
       const debrisObj = new Debris(this, x, y);
       this.debris.push(debrisObj);
     }
@@ -333,8 +366,8 @@ export class GameScene extends Phaser.Scene {
 
   private createRescueStation() {
     // Create a visual marker for the rescue station at the center of the screen
-    const stationX = 400;
-    const stationY = 300;
+    const stationX = this.getCenterX();
+    const stationY = this.getCenterY();
     
     // Create a container for the station elements
     this.rescueStation = this.add.container(stationX, stationY);
@@ -432,23 +465,12 @@ export class GameScene extends Phaser.Scene {
           // Increase player mass
           this.player.increaseMass(2);
           
-    // Show educational message about mass
+          // Show educational message about mass
           this.educationalOverlay.show(
             "Newton's 2nd Law",
             `Towing astronaut ${this.towedAstronauts.length}: Increased mass reduces acceleration (F = ma)!`,
             true // Auto-hide after 3 seconds
           );
-          
-          // Show gravity interaction message in Level 3
-          if (this.level === 3 && this.gravityWells.length > 0) {
-            this.time.delayedCall(3500, () => {
-              this.educationalOverlay.show(
-                "Gravity + Mass Effect",
-                "Extra mass also affects how gravity pulls you! Heavier objects fall faster?",
-                true
-              );
-            });
-          }
           break; // Only rescue one at a time
         }
       }
@@ -456,7 +478,7 @@ export class GameScene extends Phaser.Scene {
     
     // Check if we can deliver astronauts to rescue station (simplified: screen center)
     const stationRange = 80;
-    const stationPos = { x: 400, y: 300 };
+    const stationPos = { x: this.getCenterX(), y: this.getCenterY() };
     const distanceToStation = Phaser.Math.Distance.Between(
       playerPos.x, playerPos.y,
       stationPos.x, stationPos.y
@@ -478,17 +500,6 @@ export class GameScene extends Phaser.Scene {
         `${delivered} astronauts safely delivered! Mass reduced, acceleration restored.`,
         true // Auto-hide after 3 seconds
       );
-      
-      // Show gravity-specific message in Level 3
-      if (this.level === 3) {
-        this.time.delayedCall(3500, () => {
-          this.educationalOverlay.show(
-            "Gravity Well Mastery",
-            "Use gravity to your advantage! Slingshot around wells to save fuel and reach distant targets.",
-            true
-          );
-        });
-      }
     }
   }
 
@@ -556,18 +567,12 @@ export class GameScene extends Phaser.Scene {
         if (currentTime - this.lastCollisionTime > this.collisionCooldown) {
           this.lastCollisionTime = currentTime;
           
-          // Show educational message
-          if (this.educationalOverlay.isOverlayVisible()) {
-            this.educationalOverlay.hide();
-          }
-          
-          this.time.delayedCall(100, () => {
-            this.educationalOverlay.show(
-              "Newton's 3rd Law",
-              "Collision! Momentum transferred between objects - equal and opposite reaction!",
-              true // Auto-hide after 3 seconds
-            );
-          });
+          // Show educational message with simpler approach
+          this.educationalOverlay.show(
+            "Newton's 3rd Law",
+            "Collision! Momentum transferred between objects - equal and opposite reaction!",
+            true // Auto-hide after 3 seconds
+          );
         }
         
         // Break after handling one collision to prevent multiple in same frame
@@ -619,8 +624,8 @@ export class GameScene extends Phaser.Scene {
   }
   
   private createLevelTransitionOverlay() {
-    const gameWidth = this.sys.game.config.width as number;
-    const gameHeight = this.sys.game.config.height as number;
+    const gameWidth = this.getGameWidth();
+    const gameHeight = this.getGameHeight();
     
     // Create container
     const overlay = this.add.container(gameWidth / 2, gameHeight / 2);
@@ -741,8 +746,8 @@ export class GameScene extends Phaser.Scene {
   }
   
   private createLevel3TransitionOverlay() {
-    const gameWidth = this.sys.game.config.width as number;
-    const gameHeight = this.sys.game.config.height as number;
+    const gameWidth = this.getGameWidth();
+    const gameHeight = this.getGameHeight();
     
     // Create container
     const overlay = this.add.container(gameWidth / 2, gameHeight / 2);

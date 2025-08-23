@@ -20,7 +20,7 @@ export class GravityWell extends Phaser.GameObjects.Container {
   ) {
     super(scene, x, y);
     
-    this.gravitationalConstant = 500; // Adjusted for game scale
+    this.gravitationalConstant = 1000; // Increased for stronger gravity pull
     this.mass = mass;
     this.radius = radius;
     this.visualRadius = visualRadius;
