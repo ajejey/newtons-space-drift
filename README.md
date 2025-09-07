@@ -1,73 +1,81 @@
-# Welcome to your Lovable project
+# Newton's Space Drift - Educational Physics Game
 
-## Project info
+## About the Game
 
-**URL**: https://lovable.dev/projects/71c761b2-eed1-4fb8-80c3-6c7599b34b39
+Newton's Space Drift is an engaging educational game designed to teach Newton's Three Laws of Motion through interactive gameplay. Players navigate a rescue pod through space, saving stranded astronauts while experiencing physics principles in action.
 
-## How can I edit this code?
+## Educational Value
 
-There are several ways of editing your application.
+This game demonstrates key physics concepts including:
+- Newton's First Law: Objects in motion stay in motion unless acted upon by an external force
+- Newton's Second Law: Force equals mass times acceleration (F=ma)
+- Newton's Third Law: For every action, there is an equal and opposite reaction
+- Conservation of Momentum: Total momentum is conserved in a closed system
 
-**Use Lovable**
+## Game Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/71c761b2-eed1-4fb8-80c3-6c7599b34b39) and start prompting.
+- Four progressive levels with increasing complexity
+- Interactive physics simulations
+- Educational overlays explaining physics concepts
+- Engaging space rescue missions
+- Perfect for middle and high school physics education
 
-Changes made via Lovable will be committed automatically to this repo.
+## Development Instructions
 
-**Use your preferred IDE**
+### Local Development
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+To run this project locally, you'll need Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
 Follow these steps:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Step 1: Clone the repository
+git clone https://github.com/ajejey/newtons-space-drift.git
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Step 2: Navigate to the project directory
+cd newtons-space-drift
 
-# Step 3: Install the necessary dependencies.
+# Step 3: Install the necessary dependencies
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### GitHub Options
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+**Edit directly in GitHub**
+
+- Navigate to the desired file(s)
+- Click the "Edit" button (pencil icon) at the top right of the file view
+- Make your changes and commit them
 
 **Use GitHub Codespaces**
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- Navigate to the main page of your repository
+- Click on the "Code" button (green button) near the top right
+- Select the "Codespaces" tab
+- Click on "New codespace" to launch a new Codespace environment
 
-## What technologies are used for this project?
+## Technologies Used
 
-This project is built with:
+This educational game is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **Phaser 3.60**: Advanced 2D game framework
+- **TypeScript**: For type-safe code
+- **React**: For UI components
+- **Vite**: Fast build tool and development server
+- **Tailwind CSS**: For responsive styling
 
-## How can I deploy this project?
+## Deployment
 
-Simply open [Lovable](https://lovable.dev/projects/71c761b2-eed1-4fb8-80c3-6c7599b34b39) and click on Share -> Publish.
+This project can be deployed to any static hosting service like:
 
-## Can I connect a custom domain to my Lovable project?
+- Netlify
+- Vercel
+- GitHub Pages
+- Firebase Hosting
 
-Yes, you can!
+## Educational Use
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This game is designed for classroom use in physics education. Teachers can use it to demonstrate Newton's Laws in an engaging, interactive format that appeals to students.
