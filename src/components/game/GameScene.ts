@@ -7,6 +7,10 @@ import { GameHUD } from './GameHUD';
 import { EducationalOverlay } from './EducationalOverlay';
 import { GravityWell } from './GravityWell';
 import { TrajectoryHelper } from './TrajectoryHelper';
+import { MomentumTransferGate } from './MomentumTransferGate';
+import { MovingPlatform } from './MovingPlatform';
+import { MomentumBoostZone } from './MomentumBoostZone';
+import { MomentumLoopAstronaut } from './MomentumLoopAstronaut';
 
 export class GameScene extends Phaser.Scene {
   private player!: PlayerPod;
@@ -20,6 +24,12 @@ export class GameScene extends Phaser.Scene {
   private gravityWells: GravityWell[] = [];
   private trajectoryHelper!: TrajectoryHelper;
   private lastTrajectoryTime = 0;
+  
+  // Level 4 components
+  private momentumGates: MomentumTransferGate[] = [];
+  private movingPlatforms: MovingPlatform[] = [];
+  private momentumBoostZones: MomentumBoostZone[] = [];
+  private momentumLoopAstronauts: MomentumLoopAstronaut[] = [];
   
   // Game state
   private score = 0;
@@ -185,6 +195,75 @@ export class GameScene extends Phaser.Scene {
     // Show trajectory prediction in Level 3 when player is moving but not thrusting
     if (this.level === 3 && this.gameStarted && !this.player.isThrusting()) {
       this.updateTrajectoryHelper(time);
+    }
+    
+    // Level 4 specific updates
+    if (this.level === 4 && this.gameStarted) {
+      // Update momentum gates
+      this.momentumGates.forEach(gate => {
+        gate.update(time, delta);
+        
+        // Check if player passes through gate
+        const playerPos = this.player.getPosition();
+        const playerVel = this.player.getVelocity();
+        
+        const newVelocity = gate.checkGatePass(playerPos.x, playerPos.y, playerVel);
+        if (newVelocity) {
+          this.player.setVelocity(newVelocity.x, newVelocity.y);
+          
+          // Show educational message
+          this.educationalOverlay.show(
+            "Conservation of Momentum",
+            "Momentum transfer gate redirected your motion while preserving speed! Conservation in action!",
+            true
+          );
+        }
+      });
+      
+      // Update moving platforms
+      this.movingPlatforms.forEach(platform => {
+        platform.update(time, delta);
+        
+        // Check if player collides with platform
+        const playerPos = this.player.getPosition();
+        const playerVel = this.player.getVelocity();
+        
+        const newVelocity = platform.checkCollision(playerPos.x, playerPos.y, playerVel);
+        if (newVelocity) {
+          this.player.setVelocity(newVelocity.x, newVelocity.y);
+          
+          // Show educational message
+          this.educationalOverlay.show(
+            "Platform Momentum Transfer",
+            "The platform transferred its momentum to you! Your velocity changed based on the platform's motion.",
+            true
+          );
+        }
+      });
+      
+      // Update boost zones
+      this.momentumBoostZones.forEach(zone => {
+        zone.update(time, delta);
+        
+        // Check if player is in boost zone
+        const playerPos = this.player.getPosition();
+        const playerVel = this.player.getVelocity();
+        
+        const newVelocity = zone.checkBoost(playerPos.x, playerPos.y, playerVel);
+        if (newVelocity) {
+          this.player.setVelocity(newVelocity.x, newVelocity.y);
+          
+          // Show educational message
+          this.educationalOverlay.show(
+            "Momentum Boost",
+            "Boost zone accelerated your momentum in a new direction! Your speed increased while direction changed.",
+            true
+          );
+        }
+      });
+      
+      // Check momentum loop astronauts
+      this.checkMomentumLoopAstronauts();
     }
   }
 
@@ -527,6 +606,8 @@ export class GameScene extends Phaser.Scene {
           this.advanceToLevel2();
         } else if (this.level === 2) {
           this.advanceToLevel3();
+        } else if (this.level === 3) {
+          this.advanceToLevel4();
         } else {
           this.gameWin();
         }
@@ -543,6 +624,65 @@ export class GameScene extends Phaser.Scene {
   private lastCollisionTime = 0;
   private collisionCooldown = 1000; // 1 second cooldown between collision messages
   
+  private checkMomentumLoopAstronauts() {
+    const playerPos = this.player.getPosition();
+    const playerVel = this.player.getVelocity();
+    const playerMass = this.player.getMass();
+    const rescueRange = 60;
+    
+    // Check if player is near any momentum loop astronauts
+    for (let i = this.momentumLoopAstronauts.length - 1; i >= 0; i--) {
+      const astronaut = this.momentumLoopAstronauts[i];
+      
+      // Skip if already rescued
+      if (astronaut.isRescued()) continue;
+      
+      const distance = Phaser.Math.Distance.Between(
+        playerPos.x, playerPos.y,
+        astronaut.x, astronaut.y
+      );
+      
+      // If player is close enough, check if they can be rescued based on momentum
+      if (distance < rescueRange) {
+        // Show hint about required momentum when close
+        astronaut.showRescueHint();
+        
+        // Check if player has the right momentum to rescue
+        if (Phaser.Input.Keyboard.JustDown(this.rescueKey) || this.mobileControls.rescue) {
+          if (astronaut.canBeRescued(playerVel, playerMass)) {
+            // Rescue the astronaut
+            astronaut.rescue();
+            this.score += 150; // Extra points for momentum-based rescue
+            
+            // Remove from momentum loop astronauts array
+            this.momentumLoopAstronauts.splice(i, 1);
+            
+            // Add to towed astronauts
+            this.rescueTargets.push(astronaut);
+            this.towedAstronauts.push(astronaut);
+            
+            // Increase player mass
+            this.player.increaseMass(2);
+            
+            // Show educational message
+            this.educationalOverlay.show(
+              "Momentum-Based Rescue!",
+              "You matched the required momentum to rescue the astronaut! Perfect application of conservation principles!",
+              true
+            );
+          } else {
+            // Show message about wrong momentum
+            this.educationalOverlay.show(
+              "Momentum Mismatch",
+              "You need to match this astronaut's momentum to rescue them. Adjust your speed and direction!",
+              true
+            );
+          }
+        }
+      }
+    }
+  }
+
   private checkCollisions() {
     const playerPos = this.player.getPosition();
     const playerVel = this.player.getVelocity();
@@ -745,6 +885,19 @@ export class GameScene extends Phaser.Scene {
     this.createLevel3TransitionOverlay();
   }
   
+  private advanceToLevel4() {
+    if (!this.gameStarted) return;
+    this.gameStarted = false;
+    
+    // Force hide any existing overlays first
+    if (this.educationalOverlay.isOverlayVisible()) {
+      this.educationalOverlay.hide();
+    }
+    
+    // Create a custom overlay for level 4 transition
+    this.createLevel4TransitionOverlay();
+  }
+
   private createLevel3TransitionOverlay() {
     const gameWidth = this.getGameWidth();
     const gameHeight = this.getGameHeight();
@@ -870,6 +1023,363 @@ export class GameScene extends Phaser.Scene {
     this.input.once('pointerdown', advanceLevel);
   }
 
+  private createLevel4TransitionOverlay() {
+    const gameWidth = this.getGameWidth();
+    const gameHeight = this.getGameHeight();
+    
+    // Create container
+    const overlay = this.add.container(gameWidth / 2, gameHeight / 2);
+    overlay.setDepth(200);
+    
+    // Semi-transparent background
+    const background = this.add.graphics();
+    background.fillStyle(0x0B1426, 0.9);
+    background.fillRoundedRect(-250, -120, 500, 240, 16);
+    background.lineStyle(3, 0xFF6600); // Orange color for Level 4
+    background.strokeRoundedRect(-250, -120, 500, 240, 16);
+    
+    // Title text
+    const titleText = this.add.text(0, -80, "Level 3 Complete!", {
+      fontSize: '24px',
+      fontFamily: 'Orbitron, monospace',
+      color: '#FF6600', // Orange color for Level 4
+      align: 'center'
+    });
+    titleText.setOrigin(0.5);
+    
+    // Description text
+    const descriptionText = this.add.text(0, -20, 
+      "Amazing! Now try Level 4: CONSERVATION OF MOMENTUM CHALLENGE!\nUse momentum transfer gates, moving platforms, and rescue astronauts trapped in momentum loops.\nMaster the physics of momentum to complete your mission!", {
+      fontSize: '16px',
+      fontFamily: 'Orbitron, monospace',
+      color: '#FFFFFF',
+      align: 'center',
+      wordWrap: { width: 450, useAdvancedWrap: true }
+    });
+    descriptionText.setOrigin(0.5);
+    
+    // Close button
+    const closeButton = this.add.text(0, 80, 'PRESS SPACE TO START LEVEL 4', {
+      fontSize: '14px',
+      fontFamily: 'Orbitron, monospace',
+      color: '#FF6600',
+      align: 'center'
+    });
+    closeButton.setOrigin(0.5);
+    closeButton.setInteractive({ useHandCursor: true });
+    
+    // Add pulsing effect to close button
+    this.tweens.add({
+      targets: closeButton,
+      alpha: { from: 0.7, to: 1 },
+      duration: 800,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+    
+    // Add all elements to container
+    overlay.add([background, titleText, descriptionText, closeButton]);
+    
+    // Entrance animation
+    overlay.setScale(0);
+    overlay.setAlpha(0);
+    
+    this.tweens.add({
+      targets: overlay,
+      scale: { from: 0, to: 1 },
+      alpha: { from: 0, to: 1 },
+      duration: 300,
+      ease: 'Back.easeOut'
+    });
+    
+    // Setup direct space key handler for level transition
+    const spaceKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    
+    const advanceLevel = () => {
+      // Remove all listeners
+      if (spaceKey) spaceKey.off('down', advanceLevel);
+      closeButton.off('pointerdown', advanceLevel);
+      this.input.off('pointerdown', advanceLevel);
+      
+      // Exit animation
+      this.tweens.add({
+        targets: overlay,
+        scale: { from: 1, to: 0 },
+        alpha: { from: 1, to: 0 },
+        duration: 200,
+        ease: 'Back.easeIn',
+        onComplete: () => {
+          overlay.destroy();
+          
+          // Setup level 4
+          this.level = 4;
+          this.timeRemaining = 300; // 5 minutes for level 4 (momentum challenges add complexity)
+          this.fuel = 100; // Refuel
+          this.debris = []; // Clear any existing debris
+          this.rescueTargets = []; // Clear existing targets
+          this.towedAstronauts = [];
+          this.gravityWells = []; // Clear existing gravity wells
+          this.player.resetMass();
+          
+          // Clear any existing gravity wells from physics engine
+          this.physicsEngine.getGravityWells().forEach(well => {
+            this.physicsEngine.removeGravityWell(well);
+          });
+          
+          this.createLevel4Content(); // Create new level 4 content
+          this.gameStarted = true;
+          
+          // Show initial Level 4 guidance after a short delay
+          this.time.delayedCall(1000, () => {
+            this.educationalOverlay.show(
+              "Level 4: Conservation of Momentum",
+              "Welcome to the momentum challenge! Use momentum transfer gates to change direction while preserving speed. Match astronauts' momentum to rescue them!",
+              true
+            );
+          });
+        }
+      });
+    };
+    
+    // Add multiple ways to advance to level 4
+    if (spaceKey) spaceKey.on('down', advanceLevel);
+    closeButton.on('pointerdown', advanceLevel);
+    this.input.once('pointerdown', advanceLevel);
+  }
+
+  private createLevel4Content() {
+    // Clear any existing level-specific objects
+    this.momentumGates = [];
+    this.movingPlatforms = [];
+    this.momentumBoostZones = [];
+    this.momentumLoopAstronauts = [];
+    this.rescueTargets = [];
+    this.towedAstronauts = [];
+    
+    // Create momentum transfer gates
+    this.createMomentumGates();
+    
+    // Create moving platforms
+    this.createMovingPlatforms();
+    
+    // Create momentum boost zones
+    this.createMomentumBoostZones();
+    
+    // Create special astronauts in momentum loops
+    this.createMomentumLoopAstronauts();
+    
+    // Create some strategic debris for momentum challenges
+    this.createStrategicDebris();
+    
+    // Create rescue targets for Level 4
+    this.createLevel4RescueTargets();
+  }
+  
+  private createLevel4RescueTargets() {
+    // Create rescue targets at strategic positions that require using momentum mechanics
+    const positions = [
+      { x: this.scaleX(150), y: this.scaleY(100) },
+      { x: this.scaleX(650), y: this.scaleY(150) },
+      { x: this.scaleX(200), y: this.scaleY(450) },
+      { x: this.scaleX(550), y: this.scaleY(400) }
+    ];
+    
+    positions.forEach(pos => {
+      const target = new RescueTarget(this, pos.x, pos.y, 'astronaut-sprite');
+      this.rescueTargets.push(target);
+    });
+  }
+  
+  private createMomentumGates() {
+    // Create momentum transfer gates at strategic positions
+    const gates = [
+      // Gate 1: Horizontal to vertical (left to down)
+      { x: this.scaleX(200), y: this.scaleY(150), width: 80, height: 20, angle: 90, factor: 1.0 },
+      
+      // Gate 2: Vertical to horizontal (up to right)
+      { x: this.scaleX(600), y: this.scaleY(300), width: 80, height: 20, angle: 0, factor: 1.0 },
+      
+      // Gate 3: Diagonal redirection (45 degrees)
+      { x: this.scaleX(400), y: this.scaleY(450), width: 80, height: 20, angle: 45, factor: 1.0 },
+      
+      // Gate 4: Reverse direction (180 degrees)
+      { x: this.scaleX(150), y: this.scaleY(400), width: 80, height: 20, angle: 180, factor: 1.0 }
+    ];
+    
+    gates.forEach(gate => {
+      const momentumGate = new MomentumTransferGate(
+        this,
+        gate.x,
+        gate.y,
+        gate.width,
+        gate.height,
+        gate.angle,
+        gate.factor
+      );
+      
+      this.momentumGates.push(momentumGate);
+    });
+  }
+  
+  private createMovingPlatforms() {
+    // Create moving platforms for momentum-based jumps
+    const platforms = [
+      // Platform 1: Horizontal movement
+      { 
+        x: this.scaleX(300), 
+        y: this.scaleY(200), 
+        width: 100, 
+        height: 20, 
+        endX: this.scaleX(500), 
+        endY: this.scaleY(200), 
+        speed: 0.8, 
+        color: 0x00AAFF 
+      },
+      
+      // Platform 2: Vertical movement
+      { 
+        x: this.scaleX(650), 
+        y: this.scaleY(150), 
+        width: 100, 
+        height: 20, 
+        endX: this.scaleX(650), 
+        endY: this.scaleY(350), 
+        speed: 1.0, 
+        color: 0x00AAFF 
+      },
+      
+      // Platform 3: Diagonal movement
+      { 
+        x: this.scaleX(100), 
+        y: this.scaleY(500), 
+        width: 100, 
+        height: 20, 
+        endX: this.scaleX(250), 
+        endY: this.scaleY(350), 
+        speed: 1.2, 
+        color: 0x00AAFF 
+      }
+    ];
+    
+    platforms.forEach(platform => {
+      const movingPlatform = new MovingPlatform(
+        this,
+        platform.x,
+        platform.y,
+        platform.width,
+        platform.height,
+        platform.endX,
+        platform.endY,
+        platform.speed,
+        platform.color
+      );
+      
+      this.movingPlatforms.push(movingPlatform);
+    });
+  }
+  
+  private createMomentumBoostZones() {
+    // Create momentum boost zones
+    const boostZones = [
+      // Boost Zone 1: Upward boost
+      { x: this.scaleX(200), y: this.scaleY(300), radius: 60, angle: 270, factor: 1.5 },
+      
+      // Boost Zone 2: Rightward boost
+      { x: this.scaleX(400), y: this.scaleY(150), radius: 60, angle: 0, factor: 1.5 },
+      
+      // Boost Zone 3: Diagonal boost
+      { x: this.scaleX(600), y: this.scaleY(500), radius: 60, angle: 315, factor: 1.5 }
+    ];
+    
+    boostZones.forEach(zone => {
+      const boostZone = new MomentumBoostZone(
+        this,
+        zone.x,
+        zone.y,
+        zone.radius,
+        zone.angle,
+        zone.factor
+      );
+      
+      this.momentumBoostZones.push(boostZone);
+    });
+  }
+  
+  private createMomentumLoopAstronauts() {
+    // Create astronauts trapped in momentum loops
+    const loopAstronauts = [
+      // Astronaut 1: Circular orbit requiring medium momentum
+      { 
+        x: this.scaleX(300), 
+        y: this.scaleY(300), 
+        centerX: this.scaleX(300), 
+        centerY: this.scaleY(300), 
+        radiusX: 80, 
+        radiusY: 80, 
+        requiredMomentum: 50, 
+        momentumAngle: 90 
+      },
+      
+      // Astronaut 2: Elliptical orbit requiring higher momentum
+      { 
+        x: this.scaleX(600), 
+        y: this.scaleY(200), 
+        centerX: this.scaleX(600), 
+        centerY: this.scaleY(200), 
+        radiusX: 100, 
+        radiusY: 60, 
+        requiredMomentum: 80, 
+        momentumAngle: 0 
+      },
+      
+      // Astronaut 3: Small orbit requiring precise momentum
+      { 
+        x: this.scaleX(150), 
+        y: this.scaleY(450), 
+        centerX: this.scaleX(150), 
+        centerY: this.scaleY(450), 
+        radiusX: 50, 
+        radiusY: 50, 
+        requiredMomentum: 30, 
+        momentumAngle: 45 
+      }
+    ];
+    
+    loopAstronauts.forEach(astronaut => {
+      const loopAstronaut = new MomentumLoopAstronaut(
+        this,
+        astronaut.x,
+        astronaut.y,
+        'astronaut-sprite',
+        astronaut.centerX,
+        astronaut.centerY,
+        astronaut.radiusX,
+        astronaut.radiusY,
+        astronaut.requiredMomentum,
+        astronaut.momentumAngle
+      );
+      
+      this.momentumLoopAstronauts.push(loopAstronaut);
+    });
+  }
+  
+  private createStrategicDebris() {
+    // Create strategic debris for momentum challenges
+    const strategicDebrisPositions = [
+      { x: this.scaleX(350), y: this.scaleY(250) },
+      { x: this.scaleX(500), y: this.scaleY(400) },
+      { x: this.scaleX(250), y: this.scaleY(500) },
+      { x: this.scaleX(650), y: this.scaleY(150) },
+      { x: this.scaleX(150), y: this.scaleY(200) }
+    ];
+    
+    strategicDebrisPositions.forEach(pos => {
+      const debris = new Debris(this, pos.x, pos.y);
+      this.debris.push(debris);
+    });
+  }
+
   private gameWin() {
     if (!this.gameStarted) return; // Prevent double trigger
     this.gameStarted = false;
@@ -886,7 +1396,7 @@ export class GameScene extends Phaser.Scene {
       // Show overlay first, then pause
       this.educationalOverlay.show(
         "Mission Complete!",
-        `Outstanding! You've mastered all THREE of Newton's Laws of Motion across 3 challenging levels! Final Score: ${this.score}`
+        `Outstanding! You've mastered all of Newton's Laws of Motion across 4 challenging levels, including Conservation of Momentum! Final Score: ${this.score}`
       );
       
       // Pause after a short delay to ensure overlay is shown
@@ -896,6 +1406,8 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  // Level selection functionality removed for deployment
+  
   private gameOver() {
     if (!this.gameStarted) return; // Prevent double trigger  
     this.gameStarted = false;
